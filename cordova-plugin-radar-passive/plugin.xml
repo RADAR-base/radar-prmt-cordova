@@ -1,0 +1,33 @@
+
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+        id="cordova-plugin-radar-passive"
+        version="0.1.0-dev">
+    <name>Radar</name>
+    <description>RADAR Passive data Plugin</description>
+    <license>Apache 2.0</license>
+    <keywords>cordova,radar-base</keywords>
+    <repo>https://github.com/RADAR-base/radar-prmt-cordova</repo>
+    <issue>https://github.com/RADAR-base/radar-prmt-cordova</issue>
+
+    <engines>
+        <engine name="cordova" version=">=10.0.0"/>
+        <engine name="cordova-android" version=">=11.0.0"/>
+    </engines>
+
+
+    <js-module src="www/js/index.js" name="radarpassive">
+        <clobbers target="navigator.radarpassive" />
+    </js-module>
+
+    <!-- android -->
+    <platform name="android">
+        <source-file src="src/android/org/radarbase/cordova/plugin/passive/RadarPassivePlugin.kt" target-dir="app/src/main/kotlin/org/radarbase/cordova/plugin/passive"/>
+        <framework src="src/android/plugin.gradle" custom="true" type="gradleReference"/>
+
+        <config-file target="config.xml" parent="/*">
+            <feature name="RadarPassivePlugin" >
+                <param name="android-package" value="org.radarbase.cordova.plugin.passive.RadarPassivePlugin"/>
+            </feature>
+        </config-file>
+    </platform>
+</plugin>

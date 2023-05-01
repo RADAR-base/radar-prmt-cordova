@@ -1,0 +1,18 @@
+repositories {
+    mavenLocal()
+}
+
+ext.radarCommonsVersion = "1.2.3-SNAPSHOT"
+
+dependencies {
+    api "org.radarbase:radar-commons-android:$radarCommonsVersion"
+    implementation "org.radarbase:radar-android-phone:$radarCommonsVersion"
+    implementation "org.radarbase:radar-android-phone-usage:$radarCommonsVersion"
+    implementation "org.radarbase:radar-android-empatica:$radarCommonsVersion"
+    implementation "org.radarbase:radar-android-application-status:$radarCommonsVersion"
+    implementation "org.radarbase:radar-android-weather:$radarCommonsVersion"
+    implementation "org.radarbase:radar-android-audio:$radarCommonsVersion"
+    implementation "org.radarbase:radar-android-faros:$radarCommonsVersion"
+
+    implementation "androidx.localbroadcastmanager:localbroadcastmanager:1.1.0"
+}

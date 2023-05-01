@@ -1,6 +1,6 @@
 {
-  "name": "org.radarbase.cordova.prmt",
-  "displayName": "radar-prmt-cordova",
+  "name": "org.radarbase.cordova.plugin.passive",
+  "displayName": "cordova-plugin-radar-passive",
   "version": "1.0.0",
   "description": "A sample Apache Cordova application that responds to the deviceready event.",
   "main": "index.js",
