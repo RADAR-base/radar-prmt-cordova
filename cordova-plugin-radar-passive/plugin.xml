@@ -1,7 +1,6 @@
-
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         id="cordova-plugin-radar-passive"
-        version="0.1.0-dev">
+        version="0.1.0-dev" xmlns:android="http://schemas.android.com/apk/res/android">
     <name>Radar</name>
     <description>RADAR Passive data Plugin</description>
     <license>Apache 2.0</license>
@@ -15,14 +14,22 @@
     </engines>
 
 
-    <js-module src="www/js/index.js" name="radarpassive">
-        <clobbers target="navigator.radarpassive" />
+    <js-module src="www/js/index.js" name="cordova-plugin-radar-passive">
+        <clobbers target="RadarPassivePlugin" />
     </js-module>
 
     <!-- android -->
     <platform name="android">
         <source-file src="src/android/org/radarbase/cordova/plugin/passive/RadarPassivePlugin.kt" target-dir="app/src/main/kotlin/org/radarbase/cordova/plugin/passive"/>
+        <source-file src="src/android/org/radarbase/cordova/plugin/passive/Util.kt" target-dir="app/src/main/kotlin/org/radarbase/cordova/plugin/passive"/>
+        <source-file src="src/android/org/radarbase/cordova/plugin/passive/RadarServiceImpl.kt" target-dir="app/src/main/kotlin/org/radarbase/cordova/plugin/passive"/>
+        <source-file src="src/android/org/radarbase/cordova/plugin/passive/AuthServiceImpl.kt" target-dir="app/src/main/kotlin/org/radarbase/cordova/plugin/passive"/>
         <framework src="src/android/plugin.gradle" custom="true" type="gradleReference"/>
+
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <service android:name="org.radarbase.cordova.plugin.passive.RadarServiceImpl" android:foregroundServiceType="location" />
+            <service android:name="org.radarbase.cordova.plugin.passive.AuthServiceImpl" />
+        </config-file>
 
         <config-file target="config.xml" parent="/*">
             <feature name="RadarPassivePlugin" >

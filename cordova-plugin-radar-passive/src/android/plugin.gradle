@@ -1,5 +1,6 @@
 repositories {
     mavenLocal()
+    maven { url 'https://repo.thehyve.nl/content/repositories/releases' }
 }
 
 ext.radarCommonsVersion = "1.2.3-SNAPSHOT"

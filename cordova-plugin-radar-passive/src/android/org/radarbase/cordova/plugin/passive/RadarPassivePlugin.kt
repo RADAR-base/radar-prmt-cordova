@@ -5,24 +5,18 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.util.Log
-import android.util.SparseArray
-import androidx.core.util.valueIterator
-import androidx.lifecycle.Lifecycle
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import org.apache.cordova.CallbackContext
 import org.apache.cordova.CordovaInterface
 import org.apache.cordova.CordovaPlugin
 import org.apache.cordova.CordovaWebView
-import org.apache.cordova.PluginResult
 import org.json.JSONArray
 import org.json.JSONObject
 import org.radarbase.android.IRadarBinder
 import org.radarbase.android.RadarConfiguration
 import org.radarbase.android.RadarConfiguration.Companion.BASE_URL_KEY
-import org.radarbase.android.RadarService
 import org.radarbase.android.auth.AuthService
-import org.radarbase.android.data.DataHandler
-import org.radarbase.android.source.SourceProvider
+import org.radarbase.android.kafka.ServerStatusListener
 import org.radarbase.android.source.SourceService
 import org.radarbase.android.source.SourceService.Companion.SERVER_RECORDS_SENT_TOPIC
 import org.radarbase.android.source.SourceService.Companion.SERVER_STATUS_CHANGED
@@ -32,14 +26,6 @@ import org.radarbase.android.source.SourceService.Companion.SOURCE_STATUS_NAME
 import org.radarbase.android.source.SourceStatusListener
 import org.radarbase.android.util.BluetoothStateReceiver.Companion.bluetoothPermissionList
 import org.radarbase.android.util.ManagedServiceConnection
-import org.radarbase.monitor.application.ApplicationStatusProvider
-import org.radarbase.passive.audio.OpenSmileAudioProvider
-import org.radarbase.passive.bittium.FarosProvider
-import org.radarbase.passive.empatica.E4Provider
-import org.radarbase.passive.phone.PhoneSensorProvider
-import org.radarbase.passive.phone.usage.PhoneUsageProvider
-import org.radarbase.passive.weather.WeatherApiProvider
-import java.util.*
 
 /**
  * This class echoes a string called from JavaScript.
@@ -48,58 +34,50 @@ class RadarPassivePlugin : CordovaPlugin() {
     private lateinit var broadcastManager: LocalBroadcastManager
     private lateinit var radarServiceConnection: ManagedServiceConnection<IRadarBinder>
     private lateinit var authServiceConnection: ManagedServiceConnection<AuthService.AuthServiceBinder>
+
+    private lateinit var config: RadarConfiguration
+    private var localAuthentication: Authentication? = null
+    private lateinit var statusReceiver: BroadcastReceiver
+    private val bindListeners = SynchronizedList<CallbackContext>()
+    private val serverStatusListeners = SynchronizedSparseArray<CallbackContext>()
+    private val sourceStatusListeners = SynchronizedSparseArray<CallbackContext>()
+    private val sendListeners = SynchronizedSparseArray<CallbackContext>()
+
     private val radarService: IRadarBinder
         get() = checkNotNull(radarServiceConnection.binder) {
             "RadarService is not connected yet"
         }
-    private lateinit var config: RadarConfiguration
-    private var localAuthentication: Authentication? = null
-    private val statusReceiver: BroadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            val action = intent?.action ?: return
-            when (action) {
-                SERVER_RECORDS_SENT_TOPIC -> {
-                    val result = JSONObject().apply {
-                        put("topic", intent.getStringExtra(SERVER_RECORDS_SENT_TOPIC))
-                        val number = intent.getIntExtra(SourceService.SERVER_RECORDS_SENT_NUMBER, 0)
-                        if (number >= 0) {
-                            put("status", "SUCCESS")
-                            put("numberOfRecordsSent", number)
-                        } else {
-                            put("status", "ERROR")
-                        }
-                    }
 
-                    sendListeners.forEach {
-                        it.next(result)
-                    }
-                }
-                SERVER_STATUS_CHANGED -> {
-                    val result = intent.getStringExtra(SERVER_STATUS_CHANGED) ?: return
-                    serverStatusListeners.forEach {
-                        it.next(result)
-                    }
-                }
-                SOURCE_STATUS_CHANGED -> {
-                    val result = JSONObject().apply {
-                        put("plugin", intent.getStringExtra(SOURCE_PLUGIN_NAME))
-                        put("status", SourceStatusListener.Status.values()[intent.getIntExtra(SOURCE_STATUS_CHANGED, 0)].name)
-                        intent.getStringExtra(SOURCE_STATUS_NAME)?.let {
-                            put("sourceName", it)
-                        }
-                    }
-                    sourceStatusListeners.forEach {
-                        it.next(result)
-                    }
+    override fun initialize(cordova: CordovaInterface, webView: CordovaWebView) {
+        super.initialize(cordova, webView)
+        broadcastManager = LocalBroadcastManager.getInstance(cordova.context)
+        statusReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                val action = intent?.action ?: return
+                when (action) {
+                    SERVER_RECORDS_SENT_TOPIC -> onSendEvent(
+                        topic = intent.getStringExtra(SERVER_RECORDS_SENT_TOPIC) ?: return,
+                        numberOfRecords = intent.getIntExtra(SourceService.SERVER_RECORDS_SENT_NUMBER, 0),
+                    )
+                    SERVER_STATUS_CHANGED -> onServerStatusEvent(
+                        status = ServerStatusListener.Status.values()[intent.getIntExtra(SERVER_STATUS_CHANGED, 0)],
+                    )
+                    SOURCE_STATUS_CHANGED -> onSourceStatusEvent(
+                        pluginName = intent.getStringExtra(SOURCE_PLUGIN_NAME) ?: return,
+                        status = SourceStatusListener.Status.values()[intent.getIntExtra(SOURCE_STATUS_CHANGED, 0)],
+                        sourceName = intent.getStringExtra(SOURCE_STATUS_NAME),
+                    )
                 }
             }
         }
+        config = RadarConfiguration.getInstance(cordova.context)
+        radarServiceConnection = ManagedServiceConnection(cordova.context, RadarServiceImpl::class.java)
+        radarServiceConnection.onBoundListeners += {
+            bindListeners.forEach { it.success() }
+            bindListeners.clear()
+        }
+        authServiceConnection = ManagedServiceConnection(cordova.context, AuthServiceImpl::class.java)
     }
-
-    private val bindListeners = Collections.synchronizedList(mutableListOf<CallbackContext>())
-    private val serverStatusListeners = SynchronizedSparseArray<CallbackContext>()
-    private val sourceStatusListeners = SynchronizedSparseArray<CallbackContext>()
-    private val sendListeners = SynchronizedSparseArray<CallbackContext>()
 
     override fun execute(
         action: String,
@@ -214,7 +192,7 @@ class RadarPassivePlugin : CordovaPlugin() {
         radarService.plugins.forEach { provider ->
             result.put(
                 provider.pluginName,
-                JSONObject().apply {
+                jsonObject {
                     put("plugin", provider.pluginName)
                     if (provider.isBound) {
                         put("status", provider.connection.sourceStatus)
@@ -318,20 +296,6 @@ class RadarPassivePlugin : CordovaPlugin() {
         callbackContext.success()
     }
 
-    override fun initialize(cordova: CordovaInterface, webView: CordovaWebView) {
-        super.initialize(cordova, webView)
-        broadcastManager = LocalBroadcastManager.getInstance(cordova.context)
-        config = RadarConfiguration.getInstance(cordova.context)
-        radarServiceConnection = ManagedServiceConnection(cordova.context, RadarServiceImpl::class.java)
-        radarServiceConnection.onBoundListeners += {
-            synchronized(bindListeners) {
-                bindListeners.forEach { it.success() }
-                bindListeners.clear()
-            }
-        }
-        authServiceConnection = ManagedServiceConnection(cordova.context, AuthService::class.java)
-    }
-
     private fun detach(invalidate: Boolean) {
         radarServiceConnection.unbind()
         if (invalidate) {
@@ -359,7 +323,7 @@ class RadarPassivePlugin : CordovaPlugin() {
             }
             result.put(
                 provider.pluginName,
-                JSONObject().apply {
+                jsonObject {
                     put("plugin", provider.pluginName)
                     if (provider.isBound) {
                         put("status", provider.connection.sourceStatus)
@@ -394,6 +358,47 @@ class RadarPassivePlugin : CordovaPlugin() {
         callbackContext.success()
     }
 
+    private fun onSourceStatusEvent(
+        pluginName: String,
+        status: SourceStatusListener.Status,
+        sourceName: String?,
+    ) {
+        val result = jsonObject {
+            put("plugin", pluginName)
+            put("status", status.name)
+            if (sourceName != null) {
+                put("sourceName", sourceName)
+            }
+        }
+        sourceStatusListeners.forEach {
+            it.next(result)
+        }
+    }
+
+    private fun onServerStatusEvent(
+        status: ServerStatusListener.Status,
+    ) {
+        serverStatusListeners.forEach {
+            it.next(status.name)
+        }
+    }
+
+    private fun onSendEvent(topic: String, numberOfRecords: Int) {
+        val result = jsonObject {
+            put("topic", topic)
+            if (numberOfRecords >= 0) {
+                put("status", "SUCCESS")
+                put("numberOfRecords", numberOfRecords)
+            } else {
+                put("status", "ERROR")
+            }
+        }
+
+        sendListeners.forEach {
+            it.next(result)
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         detach(false)
@@ -401,107 +406,6 @@ class RadarPassivePlugin : CordovaPlugin() {
 
     companion object {
         private const val TAG = "RadarPassivePlugin"
-        private fun JSONObject.toStringMap(): Map<String, String?> = buildMap(length()) {
-            keys().forEach { key ->
-                put(
-                    key,
-                    get(key).takeIf { it != JSONObject.NULL }?.toString()
-                )
-            }
-        }
-        private fun JSONArray.toStringList(): List<String> = buildList(length()) {
-            repeat(length()) { idx ->
-                add(getString(idx))
-            }
-        }
-
         val bluetoothPermissionSet = bluetoothPermissionList.toHashSet()
-        private fun JSONObject.toAuthentication(): Authentication = Authentication(
-            baseUrl = getString("baseUrl"),
-            userId = getString("userId"),
-            projectId = getString("projectId"),
-            token = optString("token").takeUnless { it == "" || it == "null" },
-        )
-
-        private fun CallbackContext.next(result: String) {
-            sendPluginResult(PluginResult(PluginResult.Status.OK, result).apply {
-                keepCallback = true
-            })
-        }
-
-        private fun CallbackContext.next(result: JSONObject) {
-            sendPluginResult(PluginResult(PluginResult.Status.OK, result).apply {
-                keepCallback = true
-            })
-        }
     }
-
-    class RadarServiceImpl : RadarService() {
-        override val plugins: List<SourceProvider<*>> = listOf(
-            PhoneSensorProvider(this),
-            PhoneUsageProvider(this),
-            ApplicationStatusProvider(this),
-            FarosProvider(this),
-            E4Provider(this),
-            WeatherApiProvider(this),
-            OpenSmileAudioProvider(this),
-        )
-
-        override fun getLifecycle(): Lifecycle = lifecycle
-    }
-
-    class ContextFlushCallback(private val context: CallbackContext) : DataHandler.FlushCallback {
-        override fun success() {
-            context.success(JSONObject(mapOf("type" to "success")))
-        }
-
-        override fun error(ex: Throwable) {
-            context.error(ex.toString())
-        }
-
-        override fun progress(current: Long, total: Long) {
-            context.next(
-                JSONObject(
-                    mapOf(
-                        "type" to "progress",
-                        "current" to current,
-                        "total" to total,
-                    )
-                )
-            )
-        }
-    }
-
-    class SynchronizedSparseArray<T> {
-        private val sparseArray = SparseArray<T>()
-
-        @Synchronized
-        fun forEach(block: (T) -> Unit) {
-            sparseArray.valueIterator().forEach {
-                block(it)
-            }
-        }
-
-        @Synchronized
-        operator fun set(key: Int, value: T) {
-            sparseArray[key] = value
-        }
-
-        @Synchronized
-        operator fun minusAssign(key: Int) {
-            sparseArray.remove(key)
-        }
-
-        @Synchronized
-        fun clear() {
-            sparseArray.clear()
-        }
-    }
-
-    data class Authentication(
-        val baseUrl: String,
-        val userId: String,
-        val projectId: String,
-        val token: String?,
-    )
 }

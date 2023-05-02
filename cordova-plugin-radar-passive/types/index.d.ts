@@ -122,7 +122,7 @@ interface SendEvent {
   status: 'SUCCESS' | 'ERROR'
   topic: string
   /** Number of records sent. If the status is ERROR, then this is null. */
-  numberOfRecordsSent?: number
+  numberOfRecords?: number
 }
 
 /** Callback on flushing data. */

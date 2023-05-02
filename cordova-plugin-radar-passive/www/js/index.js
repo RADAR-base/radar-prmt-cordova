@@ -190,6 +190,5 @@ RadarPassivePlugin.prototype.flushCaches = function (callback) {
 }
 
 var radarPassivePlugin = new RadarPassivePlugin()
-window.RadarPassivePlugin = radarPassivePlugin
 
 module.exports = radarPassivePlugin;
