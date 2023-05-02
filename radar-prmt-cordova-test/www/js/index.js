@@ -21,7 +21,7 @@
 // See https://cordova.apache.org/docs/en/latest/cordova/events/events.html#deviceready
 document.addEventListener('deviceready', onDeviceReady, false);
 
-var RadarPassivePlugin = require('org.radarbase.cordova.plugin.passive/www/js')
+var RadarPassivePlugin = require('cordova-plugin-radar-passive/www/js')
 
 function onDeviceReady() {
     // Cordova is now initialized. Have fun!

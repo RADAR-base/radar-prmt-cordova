@@ -5,6 +5,8 @@
   "description": "A sample Apache Cordova application that responds to the deviceready event.",
   "main": "index.js",
   "scripts": {
+    "init": "cordova platform add android",
+    "build": "cordova build android",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -13,8 +15,9 @@
   "author": "Apache Cordova Team",
   "license": "Apache-2.0",
   "devDependencies": {
+    "cordova": "^11.1.0",
     "cordova-android": "^11.0.0",
-    "org.radarbase.cordova.plugin.passive": "file:../cordova-plugin-radar-passive"
+    "cordova-plugin-radar-passive": "file:../cordova-plugin-radar-passive"
   },
   "cordova": {
     "platforms": [
