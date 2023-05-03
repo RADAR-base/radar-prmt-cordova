@@ -21,6 +21,7 @@
     <!-- android -->
     <platform name="android">
         <source-file src="src/android/org/radarbase/cordova/plugin/passive/RadarPassivePlugin.kt" target-dir="app/src/main/kotlin/org/radarbase/cordova/plugin/passive"/>
+        <source-file src="src/android/org/radarbase/cordova/plugin/passive/RadarPassive.kt" target-dir="app/src/main/kotlin/org/radarbase/cordova/plugin/passive"/>
         <source-file src="src/android/org/radarbase/cordova/plugin/passive/Util.kt" target-dir="app/src/main/kotlin/org/radarbase/cordova/plugin/passive"/>
         <source-file src="src/android/org/radarbase/cordova/plugin/passive/RadarServiceImpl.kt" target-dir="app/src/main/kotlin/org/radarbase/cordova/plugin/passive"/>
         <source-file src="src/android/org/radarbase/cordova/plugin/passive/AuthServiceImpl.kt" target-dir="app/src/main/kotlin/org/radarbase/cordova/plugin/passive"/>
