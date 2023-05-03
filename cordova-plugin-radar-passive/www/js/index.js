@@ -103,7 +103,7 @@ function registerListener(id, type, callback) {
     _exec('register' + type + 'Listener', callback, [id])
     return {
         unregister: function (callback) {
-            exec('unregister' + type + 'Listener', callback, [id])
+            _exec('unregister' + type + 'Listener', callback, [id])
         }
     }
 }
