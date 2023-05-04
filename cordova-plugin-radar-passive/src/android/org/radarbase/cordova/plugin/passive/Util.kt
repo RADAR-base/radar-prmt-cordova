@@ -6,78 +6,91 @@ import org.apache.cordova.PluginResult
 import org.json.JSONArray
 import org.json.JSONObject
 import org.radarbase.android.data.DataHandler
+import java.lang.IllegalArgumentException
 
-data class Authentication(
-    val baseUrl: String,
-    val userId: String,
-    val projectId: String,
-    val token: String?,
-)
-
-class ContextFlushCallback(private val context: CallbackContext) : DataHandler.FlushCallback {
+class ContextFlushCallback(private val listener: ResultListener<FlushResult>) : DataHandler.FlushCallback {
     override fun success() {
-        context.success(JSONObject(mapOf("type" to "success")))
+        listener.success(FlushSuccess)
     }
-
     override fun error(ex: Throwable) {
-        context.error(ex.toString())
+        listener.error(ex.toString())
     }
-
     override fun progress(current: Long, total: Long) {
-        context.next(
-            JSONObject(
-                mapOf(
-                    "type" to "progress",
-                    "current" to current,
-                    "total" to total,
-                )
-            )
-        )
+        listener.next(FlushProgress(current, total))
     }
 }
 
-class SynchronizedSparseArray<T> {
-    private val sparseArray = SparseArray<T>()
+interface ResultListener<T> {
+    val id: Int
+    fun next(value: T)
+    fun error(message: String)
+    fun success(value: T)
+}
+
+class CallbackResultListener<T: Any>(
+    override val id: Int,
+    private val callbackContext: CallbackContext,
+    private val transform: T.() -> Any = { this },
+) : ResultListener<T> {
+    override fun next(value: T) {
+        when (val result = value.transform()) {
+            is String -> callbackContext.next(result)
+            is JSONObject -> callbackContext.next(result)
+            else -> throw IllegalArgumentException("Unknown result type ${result.javaClass}")
+        }
+    }
+    override fun error(message: String) {
+        callbackContext.error(message)
+    }
+
+    override fun success(value: T) {
+        when (val result = value.transform()) {
+            is String -> callbackContext.success(result)
+            is JSONObject -> callbackContext.success(result)
+            else -> throw IllegalArgumentException("Unknown result type ${result.javaClass}")
+        }
+    }
+}
+
+class ResultListeners<T> {
+    private val sparseArray = SparseArray<ResultListener<T>>()
 
     @Synchronized
-    fun forEach(block: (T) -> Unit) {
+    fun next(value: T) {
         repeat(sparseArray.size()) { idx ->
-            block(sparseArray.valueAt(idx))
+            sparseArray.valueAt(idx).next(value)
         }
     }
 
     @Synchronized
-    operator fun set(key: Int, value: T) {
-        sparseArray[key] = value
+    fun success(value: T) {
+        repeat(sparseArray.size()) { idx ->
+            sparseArray.valueAt(idx).success(value)
+        }
+        clear()
     }
 
     @Synchronized
-    operator fun minusAssign(key: Int) {
-        sparseArray.remove(key)
+    fun error(message: String) {
+        repeat(sparseArray.size()) { idx ->
+            sparseArray.valueAt(idx).error(message)
+        }
+        clear()
+    }
+
+    @Synchronized
+    operator fun plusAssign(listener: ResultListener<T>) {
+        sparseArray[listener.id] = listener
+    }
+
+    @Synchronized
+    operator fun minusAssign(id: Int) {
+        sparseArray.remove(id)
     }
 
     @Synchronized
     fun clear() {
         sparseArray.clear()
-    }
-}
-
-class SynchronizedList<T> {
-    private val list = mutableListOf<T>()
-
-    @Synchronized
-    fun forEach(block: (T) -> Unit) {
-        list.forEach(block)
-    }
-
-    @Synchronized
-    fun clear() {
-        list.clear()
-    }
-
-    @Synchronized
-    operator fun plusAssign(value: T) {
-        list += value
     }
 }
 
@@ -110,6 +123,35 @@ internal fun JSONArray.toStringList(): List<String> = buildList(length()) {
     }
 }
 
+fun SourceStatus.toJSONObject(): JSONObject = jsonObject {
+    put("plugin", plugin)
+    put("status", status)
+    if (sourceName != null) {
+        put("sourceName", sourceName)
+    }
+}
+
+fun SendStatus.toJSONObject(): JSONObject = jsonObject {
+    put("topic", topic)
+    if (this@toJSONObject is SendSuccess) {
+        put("status", "SUCCESS")
+        put("numberOfRecords", numberOfRecords)
+    } else {
+        put("status", "ERROR")
+    }
+}
+
+fun FlushResult.toJSONObject(): JSONObject = if (this is FlushProgress) {
+    jsonObject {
+        put("type", "progress")
+        put("current", current)
+        put("total", total)
+    }
+} else {
+    jsonObject {
+        put("type", "success")
+    }
+}
 
 internal fun JSONObject.toAuthentication() = Authentication(
     baseUrl = getString("baseUrl"),

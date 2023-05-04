@@ -6,12 +6,14 @@ import org.apache.cordova.CordovaInterface
 import org.apache.cordova.CordovaPlugin
 import org.apache.cordova.CordovaWebView
 import org.json.JSONArray
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * This class echoes a string called from JavaScript.
  */
 class RadarPassivePlugin : CordovaPlugin() {
     private lateinit var radarPassive: RadarPassive
+    private val startCallbackCounter = AtomicInteger(0)
 
     override fun initialize(cordova: CordovaInterface, webView: CordovaWebView) {
         super.initialize(cordova, webView)
@@ -27,59 +29,95 @@ class RadarPassivePlugin : CordovaPlugin() {
         try {
             with(radarPassive) {
                 when (action) {
-                    "configure" -> configure(callbackContext, args.getJSONObject(0).toStringMap())
-                    "setAuthentication" -> setAuthentication(
-                        args.optJSONObject(0)?.toAuthentication(),
-                        callbackContext
+                    "configure" -> {
+                        configure(args.getJSONObject(0).toStringMap())
+                        callbackContext.success()
+                    }
+                    "setAuthentication" -> {
+                        setAuthentication(
+                            args.optJSONObject(0)?.toAuthentication()
+                        )
+                        callbackContext.success()
+                    }
+                    "start" -> start(CallbackResultListener(startCallbackCounter.incrementAndGet(), callbackContext))
+                    "startScanning" -> {
+                        startScanning()
+                        callbackContext.success()
+                    }
+                    "stopScanning" -> {
+                        stopScanning()
+                        callbackContext.success()
+                    }
+                    "stop" -> {
+                        stop()
+                        callbackContext.success()
+                    }
+                    "serverStatus" -> callbackContext.success(serverStatus().toString())
+                    "registerServerStatusListener" -> {
+                        serverStatusListeners += CallbackResultListener(args.getInt(0), callbackContext) {
+                            name
+                        }
+                    }
+                    "unregisterServerStatusListener" -> {
+                        serverStatusListeners -= args.getInt(0)
+                        callbackContext.success()
+                    }
+                    "sourceStatus" -> {
+                        callbackContext.success(jsonObject {
+                            sourceStatus().forEach { sourceStatus ->
+                                put(sourceStatus.plugin, sourceStatus.toJSONObject())
+                            }
+                        })
+                    }
+                    "registerSourceStatusListener" -> {
+                        sourceStatusListeners += CallbackResultListener(args.getInt(0), callbackContext) {
+                            toJSONObject()
+                        }
+                    }
+                    "unregisterSourceStatusListener" -> {
+                        sourceStatusListeners -= args.getInt(0)
+                        callbackContext.success()
+                    }
+                    "registerSendListener" -> {
+                        sendListeners += CallbackResultListener(args.getInt(0), callbackContext) {
+                            toJSONObject()
+                        }
+                    }
+                    "unregisterSendListener" -> {
+                        sendListeners -= args.getInt(0)
+                        callbackContext.success()
+                    }
+                    "recordsInCache" -> callbackContext.success(
+                        jsonObject {
+                            recordsInCache().forEach { (k, v) ->
+                                put(k, v)
+                            }
+                        }
                     )
-
-                    "start" -> start(callbackContext)
-                    "startScanning" -> startScanning(callbackContext)
-                    "stopScanning" -> stopScanning(callbackContext)
-                    "stop" -> stop(callbackContext)
-                    "serverStatus" -> serverStatus(callbackContext)
-                    "registerServerStatusListener" -> registerServerStatusListener(
-                        args.getInt(0),
-                        callbackContext,
+                    "permissionsNeeded" -> callbackContext.success(
+                        jsonObject {
+                            permissionsNeeded().forEach { (k, v) ->
+                                put(k, JSONArray(v))
+                            }
+                        }
                     )
-
-                    "unregisterServerStatusListener" -> unregisterServerStatusListener(
-                        args.getInt(0),
-                        callbackContext,
+                    "onAcquiredPermissions" -> {
+                        onAcquiredPermissions()
+                        callbackContext.success()
+                    }
+                    "bluetoothNeeded" -> callbackContext.success(JSONArray(bluetoothNeeded()))
+                    "setAllowedSourceIds" -> {
+                        setAllowedSourceIds(
+                            args.getString(0),
+                            args.getJSONArray(1).toStringList(),
+                        )
+                        callbackContext.success()
+                    }
+                    "flushCaches" -> flushCaches(
+                        CallbackResultListener(startCallbackCounter.incrementAndGet(), callbackContext) {
+                            toJSONObject()
+                        }
                     )
-
-                    "sourceStatus" -> sourceStatus(callbackContext)
-                    "registerSourceStatusListener" -> registerSourceStatusListener(
-                        args.getInt(0),
-                        callbackContext,
-                    )
-
-                    "unregisterSourceStatusListener" -> unregisterSourceStatusListener(
-                        args.getInt(0),
-                        callbackContext,
-                    )
-
-                    "registerSendListener" -> registerSendListener(
-                        args.getInt(0),
-                        callbackContext,
-                    )
-
-                    "unregisterSendListener" -> unregisterSendListener(
-                        args.getInt(0),
-                        callbackContext,
-                    )
-
-                    "recordsInCache" -> recordsInCache(callbackContext)
-                    "permissionsNeeded" -> permissionsNeeded(callbackContext)
-                    "onAcquiredPermissions" -> onAcquiredPermissions(callbackContext)
-                    "bluetoothNeeded" -> bluetoothNeeded(callbackContext)
-                    "setAllowedSourceIds" -> setAllowedSourceIds(
-                        args.getString(0),
-                        args.getJSONArray(1).toStringList(),
-                        callbackContext,
-                    )
-
-                    "flushCaches" -> flushCaches(callbackContext)
                     else -> {
                         Log.w(TAG, "Unknown command $action")
                         return false

@@ -6,9 +6,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.util.Log
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import org.apache.cordova.CallbackContext
-import org.json.JSONArray
-import org.json.JSONObject
 import org.radarbase.android.IRadarBinder
 import org.radarbase.android.RadarConfiguration
 import org.radarbase.android.RadarConfiguration.Companion.BASE_URL_KEY
@@ -33,10 +30,10 @@ class RadarPassive(context: Context) {
     private val config: RadarConfiguration = RadarConfiguration.getInstance(context)
     private var localAuthentication: Authentication? = null
     private val statusReceiver: BroadcastReceiver
-    private val bindListeners = SynchronizedList<CallbackContext>()
-    private val serverStatusListeners = SynchronizedSparseArray<CallbackContext>()
-    private val sourceStatusListeners = SynchronizedSparseArray<CallbackContext>()
-    private val sendListeners = SynchronizedSparseArray<CallbackContext>()
+    private val bindListeners = ResultListeners<Unit>()
+    val serverStatusListeners = ResultListeners<ServerStatusListener.Status>()
+    val sourceStatusListeners = ResultListeners<SourceStatus>()
+    val sendListeners = ResultListeners<SendStatus>()
 
     private val radarService: IRadarBinder
         get() = checkNotNull(radarServiceConnection.binder) {
@@ -64,88 +61,14 @@ class RadarPassive(context: Context) {
             }
         }
         radarServiceConnection.onBoundListeners += {
-            bindListeners.forEach { it.success() }
-            bindListeners.clear()
+            bindListeners.success(Unit)
+        }
+        authServiceConnection.onBoundListeners += {
+            syncAuthentication()
         }
     }
 
-    fun setAllowedSourceIds(pluginName: String, sourceIds: List<String>, callbackContext: CallbackContext) {
-        val radarService = radarService
-        val provider = radarService.connections.find { it.pluginName == pluginName } ?: run {
-            callbackContext.error("Plugin $pluginName not found to set source IDs for")
-            return
-        }
-        radarService.setAllowedSourceIds(provider.connection, sourceIds)
-        callbackContext.success()
-    }
-
-    fun registerServerStatusListener(id: Int, callbackContext: CallbackContext) {
-        serverStatusListeners[id] = callbackContext
-    }
-
-    fun unregisterServerStatusListener(id: Int, callbackContext: CallbackContext) {
-        serverStatusListeners -= id
-        callbackContext.success()
-    }
-
-    fun registerSourceStatusListener(id: Int, callbackContext: CallbackContext) {
-        sourceStatusListeners[id] = callbackContext
-    }
-
-    fun unregisterSourceStatusListener(id: Int, callbackContext: CallbackContext) {
-        sourceStatusListeners -= id
-        callbackContext.success()
-    }
-
-    fun registerSendListener(id: Int, callbackContext: CallbackContext) {
-        sendListeners[id] = callbackContext
-    }
-
-    fun unregisterSendListener(id: Int, callbackContext: CallbackContext) {
-        sendListeners -= id
-        callbackContext.success()
-    }
-
-    fun serverStatus(callbackContext: CallbackContext) {
-        callbackContext.success(radarService.serverStatus.toString())
-    }
-
-    fun sourceStatus(callbackContext: CallbackContext) {
-        val result = JSONObject()
-        radarService.plugins.forEach { provider ->
-            result.put(
-                provider.pluginName,
-                jsonObject {
-                    put("plugin", provider.pluginName)
-                    if (provider.isBound) {
-                        put("status", provider.connection.sourceStatus)
-                        provider.connection.sourceName?.let {
-                            put("sourceName", it)
-                        }
-                    } else {
-                        put("status", SourceStatusListener.Status.DISABLED)
-                    }
-                },
-            )
-        }
-        callbackContext.success(result)
-    }
-
-    fun recordsInCache(callbackContext: CallbackContext) {
-        val dataHandler = radarService.dataHandler ?: run {
-            callbackContext.error("Data handler is not active yet")
-            return
-        }
-
-        val result = JSONObject()
-        dataHandler.caches.forEach {
-            val topic = it.readTopic.name
-            result.put(topic, it.numberOfRecords + result.optLong(topic))
-        }
-        callbackContext.success(result)
-    }
-
-    fun configure(callbackContext: CallbackContext, configuration: Map<String, String?>) {
+    fun configure(configuration: Map<String, String?>) {
         val toReset = mutableListOf<String>()
         configuration.forEach { (k, v) ->
             if (v == null) {
@@ -159,18 +82,11 @@ class RadarPassive(context: Context) {
         } else {
             config.persistChanges()
         }
-        callbackContext.success()
     }
 
-    fun setAuthentication(auth: Authentication?, callbackContext: CallbackContext) {
+    fun setAuthentication(auth: Authentication?) {
         this.localAuthentication = auth
         syncAuthentication()
-        callbackContext.success()
-    }
-
-    fun startScanning(callbackContext: CallbackContext) {
-        radarService.startScanning()
-        callbackContext.success()
     }
 
     private fun syncAuthentication() {
@@ -197,8 +113,8 @@ class RadarPassive(context: Context) {
         }
     }
 
-    fun start(callbackContext: CallbackContext) {
-        bindListeners += callbackContext
+    fun start(resultListener: ResultListener<Unit>) {
+        bindListeners += resultListener
         broadcastManager.registerReceiver(statusReceiver, IntentFilter().apply {
             addAction(SERVER_RECORDS_SENT_TOPIC)
             addAction(SOURCE_STATUS_CHANGED)
@@ -208,60 +124,46 @@ class RadarPassive(context: Context) {
         authServiceConnection.bind()
     }
 
-    fun stop(callbackContext: CallbackContext) {
-        // Causes logout and also
-        detach(true)
-        callbackContext.success()
+    fun startScanning() {
+        radarService.startScanning()
     }
 
-    fun stopScanning(callbackContext: CallbackContext) {
+    fun stopScanning() {
         radarService.stopScanning()
-        callbackContext.success()
     }
 
-    fun permissionsNeeded(callbackContext: CallbackContext) {
-        val result = JSONObject()
+    fun stop() {
+        // Causes logout and also stops foreground service
+        detach(true)
+    }
+
+    fun onDestroy() {
+        detach(false)
+    }
+
+    fun permissionsNeeded(): Map<String, List<String>> = buildMap {
         radarService.connections.forEach { provider ->
             provider.permissionsNeeded.forEach { permission ->
-                val pluginList = result.optJSONArray(permission)
-                    ?: JSONArray().also { result.put(permission, it) }
-                pluginList.put(provider.pluginName)
+                val pluginList = computeIfAbsent(permission) { mutableListOf() } as MutableList<String>
+                pluginList += provider.pluginName
             }
-            result.put(
-                provider.pluginName,
-                jsonObject {
-                    put("plugin", provider.pluginName)
-                    if (provider.isBound) {
-                        put("status", provider.connection.sourceStatus)
-                        provider.connection.sourceName?.let {
-                            put("sourceName", it)
-                        }
-                    } else {
-                        put("status", SourceStatusListener.Status.DISABLED)
-                    }
-                },
-            )
         }
-        callbackContext.success(result)
     }
 
-    fun flushCaches(callbackContext: CallbackContext) {
-        radarService.flushCaches(ContextFlushCallback(callbackContext))
+    fun flushCaches(resultListener: ResultListener<FlushResult>) {
+        radarService.flushCaches(ContextFlushCallback(resultListener))
     }
 
-    fun bluetoothNeeded(callbackContext: CallbackContext) {
-        val result = JSONArray()
+    fun bluetoothNeeded(): List<String> = buildList {
         radarService.connections.forEach { provider ->
             if (provider.permissionsNeeded.any { it in bluetoothPermissionSet }) {
-                result.put(provider.pluginName)
+                add(provider.pluginName)
             }
         }
-        callbackContext.success(result)
     }
 
-    fun onAcquiredPermissions(callbackContext: CallbackContext) {
+    fun onAcquiredPermissions() {
         radarService.startScanning()
-        callbackContext.success()
     }
 
     fun onSourceStatusEvent(
@@ -269,39 +171,57 @@ class RadarPassive(context: Context) {
         status: SourceStatusListener.Status,
         sourceName: String?,
     ) {
-        val result = jsonObject {
-            put("plugin", pluginName)
-            put("status", status.name)
-            if (sourceName != null) {
-                put("sourceName", sourceName)
-            }
-        }
-        sourceStatusListeners.forEach {
-            it.next(result)
-        }
+        sourceStatusListeners.next(SourceStatus(pluginName, status, sourceName))
     }
 
     fun onServerStatusEvent(
         status: ServerStatusListener.Status,
     ) {
-        serverStatusListeners.forEach {
-            it.next(status.name)
-        }
+        serverStatusListeners.next(status)
     }
 
     fun onSendEvent(topic: String, numberOfRecords: Int) {
-        val result = jsonObject {
-            put("topic", topic)
-            if (numberOfRecords >= 0) {
-                put("status", "SUCCESS")
-                put("numberOfRecords", numberOfRecords)
-            } else {
-                put("status", "ERROR")
-            }
+        val result = if (numberOfRecords >= 0) {
+            SendSuccess(topic, numberOfRecords)
+        } else {
+            SendError(topic)
         }
 
-        sendListeners.forEach {
-            it.next(result)
+        sendListeners.next(result)
+    }
+
+    fun setAllowedSourceIds(pluginName: String, sourceIds: List<String>) {
+        val radarService = radarService
+        val provider = requireNotNull(radarService.connections.find { it.pluginName == pluginName }) {
+            "Plugin $pluginName not found to set source IDs for"
+        }
+        radarService.setAllowedSourceIds(provider.connection, sourceIds)
+    }
+
+    fun serverStatus() = radarService.serverStatus
+
+    fun sourceStatus(): List<SourceStatus> = radarService.plugins.map { provider ->
+        SourceStatus(
+            plugin = provider.pluginName,
+            status = if (provider.isBound) {
+                provider.connection.sourceStatus
+                    ?: SourceStatusListener.Status.DISCONNECTED
+            } else {
+                SourceStatusListener.Status.DISABLED
+            },
+            sourceName = if (provider.isBound) provider.connection.sourceName else null
+        )
+    }
+
+    fun recordsInCache(): Map<String, Long> {
+        val dataHandler = checkNotNull(radarService.dataHandler) { "Data handler is not active yet" }
+        val caches = dataHandler.caches
+
+        return buildMap(caches.size) {
+            caches.forEach {
+                val topic = it.readTopic.name
+                put(topic, it.numberOfRecords + (get(topic) ?: 0L))
+            }
         }
     }
 
@@ -320,10 +240,6 @@ class RadarPassive(context: Context) {
         sendListeners.clear()
         serverStatusListeners.clear()
         bindListeners.clear()
-    }
-
-    fun onDestroy() {
-        detach(false)
     }
 
     companion object {
