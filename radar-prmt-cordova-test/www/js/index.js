@@ -88,18 +88,21 @@ function onDeviceReady() {
                                         RadarPassivePlugin.serverStatus({
                                             success: function (serverStatus) {
                                                 console.log('Configured successfully! serverStatus', serverStatus)
+                                                setTimeout(function () {
+                                                    RadarPassivePlugin.startScanning({
+                                                        success: function () {
+                                                            console.log("Started scanning!")
+                                                        }
+                                                    })
+                                                    RadarPassivePlugin.permissionsNeeded({
+                                                        success: function (permissionsNeeded) {
+                                                            console.log("permissions needed: ", JSON.stringify(permissionsNeeded))
+                                                        }
+                                                    })
+                                                }, 1000);
                                             }
                                         })
-                                        RadarPassivePlugin.startScanning({
-                                            success: function () {
-                                                console.log("Started scanning!")
-                                            }
-                                        })
-                                        RadarPassivePlugin.permissionsNeeded({
-                                            success: function (permissionsNeeded) {
-                                                console.log("permissions needed: ", JSON.stringify(permissionsNeeded))
-                                            }
-                                        })
+
                                     }, 1000)
                                 }
                             })
