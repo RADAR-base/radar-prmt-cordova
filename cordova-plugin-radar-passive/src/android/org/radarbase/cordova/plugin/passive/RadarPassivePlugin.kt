@@ -32,11 +32,13 @@ class RadarPassivePlugin : CordovaPlugin() {
         try {
             with(radarPassive) {
                 when (action) {
-                    "configure" -> {
+                    // put in a threadpool because configure can be slow
+                    "configure" -> cordova.threadPool.execute {
                         configure(args.getJSONObject(0).toStringMap())
                         callbackContext.success()
                     }
-                    "setAuthentication" -> {
+                    // put in a threadpool because authentication can be slow
+                    "setAuthentication" -> cordova.threadPool.execute {
                         setAuthentication(args.optJSONObject(0)?.toAuthentication())
                         callbackContext.success()
                     }

@@ -32,8 +32,8 @@ function onDeviceReady() {
     var config = {
         //contact_email: "myemail@email.com",
         //contact_phone: "+31 123456789",
-        device_services_to_connect: "shimmer interactive_measurements .phone.PhoneSensorProvider .application.ApplicationServiceProvider .weather.WeatherApiProvider .phone.PhoneLocationProvider .phone.PhoneBluetoothProvider .phone.PhoneContactListProvider .phone.PhoneUsageProvider .passive.bittium.FarosProvider .passive.ppg.PhonePpgProvider .audio.AudioServiceProvider",
-        empatica_api_key: "75e7b45dcb2b418e89dc957174bafeb6",
+        device_services_to_connect: null,
+        empatica_api_key: null,
         enable_bluetooth_requests: "false",
         external_user_id: "peyman-6-android",
         kafka_clean_rate: "3600",
@@ -49,9 +49,8 @@ function onDeviceReady() {
         oauth2_client_secret: "saturday$SHARE$scale",
         oauth2_redirect_url: "org.radarcns.detail://oauth2/redirect",
         oauth2_token_url: "https://radar-k3s-test.thehyve.net/managementportal/oauth/token",
-        plugins: "shimmer interactive_measurements .audio.AudioServiceProvider .phone.PhoneSensorProvider .application.ApplicationServiceProvider .weather.WeatherApiProvider .phone.PhoneLocationProvider .phone.PhoneBluetoothProvider .phone.PhoneContactListProvider .phone.PhoneLogProvider .phone.PhoneUsageProvider .passive.bittium.FarosProvider .passive.ppg.PhonePpgProvider .empatica.E4ServiceProvider",
-        privacy_policy: "http://info.thehyve.nl/radar-cns-privacy-policy",
-        protocol: "group-b",
+        plugins: "opensmile_audio phone_sensors application_status weather phone_location phone_bluetooth phone_contacts phone_usage bittium_faros empatica_e4",
+        privacy_policy: "https://www.thehyve.nl/radar-cns-privacy-policy",
         radar_base_url: "https://radar-k3s-test.thehyve.net",
         radar_project_id: "project-test-10",
         radar_user_id: "92ec9fee-516d-43e5-a981-b418a9c9cc63",
@@ -63,11 +62,7 @@ function onDeviceReady() {
         test_name: "test_value",
         test_name_2: "test_value_2",
         ui_refresh_rate_millis: "250",
-        unsafe_kafka_connection: "false",
-        update_check: "true",
-        update_check_frequency: "day",
-        update_check_notification: "true",
-        update_releases_url: "https://api.github.com/repos/RADAR-base/radar-prmt-android/releases"
+        unsafe_kafka_connection: "false"
     };
 
     RadarPassivePlugin.start({
@@ -84,8 +79,6 @@ function onDeviceReady() {
                         token: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJhdWQiOlsicmVzX2FwcGNvbmZpZyIsInJlc19nYXRld2F5IiwicmVzX01hbmFnZW1lbnRQb3J0YWwiXSwic3ViIjoiOTJlYzlmZWUtNTE2ZC00M2U1LWE5ODEtYjQxOGE5YzljYzYzIiwic291cmNlcyI6WyJkY2Q2YzcxOC02OTFhLTQxMzYtYmYwOC04NzJjZTdjNmE2NzEiLCI3ODIwMWZmMy0wMTY5LTRlMmYtYWMzNS0xM2ZkYmRlZDdlZWMiLCJjY2NiNGE5ZC1iZDgxLTQyZmEtYmVkYy0yMmEzMDc1YjVmMDIiXSwiZ3JhbnRfdHlwZSI6ImF1dGhvcml6YXRpb25fY29kZSIsInVzZXJfbmFtZSI6IjkyZWM5ZmVlLTUxNmQtNDNlNS1hOTgxLWI0MThhOWM5Y2M2MyIsInJvbGVzIjpbInByb2plY3QtdGVzdC0xMDpST0xFX1BBUlRJQ0lQQU5UIl0sInNjb3BlIjpbIk1FQVNVUkVNRU5ULkNSRUFURSIsIlNVQkpFQ1QuUkVBRCIsIlNVQkpFQ1QuVVBEQVRFIl0sImlzcyI6Ik1hbmFnZW1lbnRQb3J0YWwiLCJleHAiOjE2ODMyMzY3ODksImlhdCI6MTY4MzE5MzU4OSwiYXV0aG9yaXRpZXMiOlsiUk9MRV9QQVJUSUNJUEFOVCJdLCJjbGllbnRfaWQiOiJwUk1UIn0.357o7TLjEItuN8NS_i7F_L5G3qEU0Qs8f07boS3AkBCBWTEmYPesFWYN55cilPso6E_5ZWfAQA1eLKORnFF1Ng',
                         projectId: "project-test-10",
                         userId: "92ec9fee-516d-43e5-a981-b418a9c9cc63"
-
-
                     },{
                         success: function (authRes) {
                             console.log('setAuthentication successfully! authRes:', authRes)
@@ -93,6 +86,16 @@ function onDeviceReady() {
                             RadarPassivePlugin.serverStatus({
                                 success: function (serverStatus) {
                                     console.log('Configured successfully! serverStatus', serverStatus)
+                                }
+                            })
+                            RadarPassivePlugin.startScanning({
+                                success: function() {
+                                    console.log("Started scanning!")
+                                }
+                            })
+                            RadarPassivePlugin.permissionsNeeded({
+                                success: function (permissionsNeeded) {
+                                    console.log("permissions needed: ", JSON.stringify(permissionsNeeded))
                                 }
                             })
                         }

@@ -48,8 +48,7 @@ internal fun JSONObject.toStringMap(): Map<String, String?> = buildMap(length())
     this@toStringMap.keys().forEach { key ->
         put(
             key,
-            get(key)
-                ?.takeIf { it != JSONObject.NULL }
+            this@toStringMap.get(key).takeIf { it != JSONObject.NULL }
                 ?.toString()
         )
     }

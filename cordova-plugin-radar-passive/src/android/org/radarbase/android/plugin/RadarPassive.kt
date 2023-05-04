@@ -75,9 +75,10 @@ class RadarPassive(
     }
 
     fun configure(configuration: Map<String, String?>) {
+        Log.i(TAG, "Setting configuration $configuration")
         val toReset = mutableListOf<String>()
         configuration.forEach { (k, v) ->
-            if (v == null) {
+            if (v.isNullOrEmpty()) {
                 toReset += k
             } else {
                 config.put(k, v)
