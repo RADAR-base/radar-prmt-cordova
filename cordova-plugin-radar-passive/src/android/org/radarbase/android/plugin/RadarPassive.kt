@@ -46,6 +46,7 @@ class RadarPassive(
         }
 
     init {
+        AuthService.authServiceClass = authServiceClass
         statusReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 val action = intent?.action ?: return
@@ -84,9 +85,8 @@ class RadarPassive(
         }
         if (toReset.isNotEmpty()) {
             config.reset(*toReset.toTypedArray())
-        } else {
-            config.persistChanges()
         }
+        config.persistChanges()
     }
 
     fun setAuthentication(auth: Authentication?) {

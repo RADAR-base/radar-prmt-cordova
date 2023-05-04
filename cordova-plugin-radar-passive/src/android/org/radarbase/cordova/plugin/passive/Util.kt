@@ -18,26 +18,22 @@ internal class CallbackResultListener<T: Any>(
     private val transform: T.() -> Any = { this },
 ) : ResultListener<T> {
     override fun next(value: T) {
-        when (val result = value.transform()) {
-            is String -> callbackContext.sendPluginResult(PluginResult(PluginResult.Status.OK, result).apply {
-                keepCallback = true
-            })
-            is JSONObject -> callbackContext.sendPluginResult(PluginResult(PluginResult.Status.OK, result).apply {
-                keepCallback = true
-            })
-            else -> throw IllegalArgumentException("Unknown result type ${result.javaClass}")
-        }
+        callbackContext.sendPluginResult(value.toPluginResult().apply { keepCallback = true })
     }
     override fun error(message: String) {
         callbackContext.error(message)
     }
-
     override fun success(value: T) {
-        when (val result = value.transform()) {
-            is String -> callbackContext.success(result)
-            is JSONObject -> callbackContext.success(result)
-            else -> throw IllegalArgumentException("Unknown result type ${result.javaClass}")
-        }
+        callbackContext.sendPluginResult(value.toPluginResult())
+    }
+
+    private fun T.toPluginResult(
+        status: PluginResult.Status = PluginResult.Status.OK,
+    ) = when (val result = transform()) {
+        is String -> PluginResult(status, result)
+        is JSONObject -> PluginResult(status, result)
+        is Unit -> PluginResult(status)
+        else -> throw IllegalArgumentException("Unknown result type ${result.javaClass}")
     }
 }
 
@@ -49,10 +45,12 @@ internal fun <T: Any> CallbackContext.toListener(
 internal fun jsonObject(builder: JSONObject.() -> Unit) = JSONObject().apply(builder)
 
 internal fun JSONObject.toStringMap(): Map<String, String?> = buildMap(length()) {
-    keys().forEach { key ->
+    this@toStringMap.keys().forEach { key ->
         put(
             key,
-            get(key).takeIf { it != JSONObject.NULL }?.toString()
+            get(key)
+                ?.takeIf { it != JSONObject.NULL }
+                ?.toString()
         )
     }
 }
