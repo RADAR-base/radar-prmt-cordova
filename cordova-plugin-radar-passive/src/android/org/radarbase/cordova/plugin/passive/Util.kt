@@ -32,6 +32,7 @@ internal class CallbackResultListener<T: Any>(
     ) = when (val result = transform()) {
         is String -> PluginResult(status, result)
         is JSONObject -> PluginResult(status, result)
+        is JSONArray -> PluginResult(status, result)
         is Unit -> PluginResult(status)
         else -> throw IllegalArgumentException("Unknown result type ${result.javaClass}")
     }

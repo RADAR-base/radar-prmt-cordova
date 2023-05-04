@@ -65,48 +65,54 @@ function onDeviceReady() {
         unsafe_kafka_connection: "false"
     };
 
-    setTimeout(function() {
-        RadarPassivePlugin.start({
-            success: function () {
-                console.log('2started!')
+    RadarPassivePlugin.start({
+        success: function () {
+            console.log('2started!')
 
-                setTimeout(function() {
-                    RadarPassivePlugin.configure(config, {
-                        success: function (configureRes) {
-                            console.log('Configured successfully! configureRes:', configureRes)
+            RadarPassivePlugin.configure(config, {
+                success: function (configureRes) {
+                    console.log('Configured successfully! configureRes:', configureRes)
 
-                            RadarPassivePlugin.setAuthentication({
-                                baseUrl: "https://radar-k3s-test.thehyve.net",
-                                // token: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJhdWQiOlsicmVzX2FwcGNvbmZpZyIsInJlc19nYXRld2F5IiwicmVzX01hbmFnZW1lbnRQb3J0YWwiXSwic3ViIjoiOTJlYzlmZWUtNTE2ZC00M2U1LWE5ODEtYjQxOGE5YzljYzYzIiwic291cmNlcyI6WyJkY2Q2YzcxOC02OTFhLTQxMzYtYmYwOC04NzJjZTdjNmE2NzEiLCI3ODIwMWZmMy0wMTY5LTRlMmYtYWMzNS0xM2ZkYmRlZDdlZWMiLCJjY2NiNGE5ZC1iZDgxLTQyZmEtYmVkYy0yMmEzMDc1YjVmMDIiXSwiZ3JhbnRfdHlwZSI6ImF1dGhvcml6YXRpb25fY29kZSIsInVzZXJfbmFtZSI6IjkyZWM5ZmVlLTUxNmQtNDNlNS1hOTgxLWI0MThhOWM5Y2M2MyIsInJvbGVzIjpbInByb2plY3QtdGVzdC0xMDpST0xFX1BBUlRJQ0lQQU5UIl0sInNjb3BlIjpbIk1FQVNVUkVNRU5ULkNSRUFURSIsIlNVQkpFQ1QuUkVBRCIsIlNVQkpFQ1QuVVBEQVRFIl0sImlzcyI6Ik1hbmFnZW1lbnRQb3J0YWwiLCJleHAiOjE2ODMxNTAzODMsImlhdCI6MTY4MzEwNzE4MywiYXV0aG9yaXRpZXMiOlsiUk9MRV9QQVJUSUNJUEFOVCJdLCJjbGllbnRfaWQiOiJwUk1UIn0.EUh03i41rBRMpqnaUsf4fnB5I0m0_A0Nvxo846a2xUMQwfSi0yZ9uuv4q_O2dTOm7pVAhKwL5er7UmlfCG4S6w',
-                                token: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJhdWQiOlsicmVzX2FwcGNvbmZpZyIsInJlc19nYXRld2F5IiwicmVzX01hbmFnZW1lbnRQb3J0YWwiXSwic3ViIjoiOTJlYzlmZWUtNTE2ZC00M2U1LWE5ODEtYjQxOGE5YzljYzYzIiwic291cmNlcyI6WyJkY2Q2YzcxOC02OTFhLTQxMzYtYmYwOC04NzJjZTdjNmE2NzEiLCI3ODIwMWZmMy0wMTY5LTRlMmYtYWMzNS0xM2ZkYmRlZDdlZWMiLCJjY2NiNGE5ZC1iZDgxLTQyZmEtYmVkYy0yMmEzMDc1YjVmMDIiXSwiZ3JhbnRfdHlwZSI6ImF1dGhvcml6YXRpb25fY29kZSIsInVzZXJfbmFtZSI6IjkyZWM5ZmVlLTUxNmQtNDNlNS1hOTgxLWI0MThhOWM5Y2M2MyIsInJvbGVzIjpbInByb2plY3QtdGVzdC0xMDpST0xFX1BBUlRJQ0lQQU5UIl0sInNjb3BlIjpbIk1FQVNVUkVNRU5ULkNSRUFURSIsIlNVQkpFQ1QuUkVBRCIsIlNVQkpFQ1QuVVBEQVRFIl0sImlzcyI6Ik1hbmFnZW1lbnRQb3J0YWwiLCJleHAiOjE2ODMyMzY3ODksImlhdCI6MTY4MzE5MzU4OSwiYXV0aG9yaXRpZXMiOlsiUk9MRV9QQVJUSUNJUEFOVCJdLCJjbGllbnRfaWQiOiJwUk1UIn0.357o7TLjEItuN8NS_i7F_L5G3qEU0Qs8f07boS3AkBCBWTEmYPesFWYN55cilPso6E_5ZWfAQA1eLKORnFF1Ng',
-                                projectId: "project-test-10",
-                                userId: "92ec9fee-516d-43e5-a981-b418a9c9cc63"
-                            }, {
-                                success: function (authRes) {
-                                    console.log('setAuthentication successfully! authRes:', authRes)
-                                    setTimeout(function () {
-                                        RadarPassivePlugin.serverStatus({
-                                            success: function (serverStatus) {
-                                                console.log('Configured successfully! serverStatus', serverStatus)
-                                            }
-                                        })
-                                        RadarPassivePlugin.startScanning({
-                                            success: function () {
-                                                console.log("Started scanning!")
-                                            }
-                                        })
-                                        RadarPassivePlugin.permissionsNeeded({
-                                            success: function (permissionsNeeded) {
-                                                console.log("permissions needed: ", JSON.stringify(permissionsNeeded))
-                                            }
-                                        })
-                                    }, 1000)
-                                }
-                            })
+                    RadarPassivePlugin.setAuthentication({
+                        baseUrl: "https://radar-k3s-test.thehyve.net",
+                        // token: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJhdWQiOlsicmVzX2FwcGNvbmZpZyIsInJlc19nYXRld2F5IiwicmVzX01hbmFnZW1lbnRQb3J0YWwiXSwic3ViIjoiOTJlYzlmZWUtNTE2ZC00M2U1LWE5ODEtYjQxOGE5YzljYzYzIiwic291cmNlcyI6WyJkY2Q2YzcxOC02OTFhLTQxMzYtYmYwOC04NzJjZTdjNmE2NzEiLCI3ODIwMWZmMy0wMTY5LTRlMmYtYWMzNS0xM2ZkYmRlZDdlZWMiLCJjY2NiNGE5ZC1iZDgxLTQyZmEtYmVkYy0yMmEzMDc1YjVmMDIiXSwiZ3JhbnRfdHlwZSI6ImF1dGhvcml6YXRpb25fY29kZSIsInVzZXJfbmFtZSI6IjkyZWM5ZmVlLTUxNmQtNDNlNS1hOTgxLWI0MThhOWM5Y2M2MyIsInJvbGVzIjpbInByb2plY3QtdGVzdC0xMDpST0xFX1BBUlRJQ0lQQU5UIl0sInNjb3BlIjpbIk1FQVNVUkVNRU5ULkNSRUFURSIsIlNVQkpFQ1QuUkVBRCIsIlNVQkpFQ1QuVVBEQVRFIl0sImlzcyI6Ik1hbmFnZW1lbnRQb3J0YWwiLCJleHAiOjE2ODMxNTAzODMsImlhdCI6MTY4MzEwNzE4MywiYXV0aG9yaXRpZXMiOlsiUk9MRV9QQVJUSUNJUEFOVCJdLCJjbGllbnRfaWQiOiJwUk1UIn0.EUh03i41rBRMpqnaUsf4fnB5I0m0_A0Nvxo846a2xUMQwfSi0yZ9uuv4q_O2dTOm7pVAhKwL5er7UmlfCG4S6w',
+                        token: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJhdWQiOlsicmVzX2FwcGNvbmZpZyIsInJlc19nYXRld2F5IiwicmVzX01hbmFnZW1lbnRQb3J0YWwiXSwic3ViIjoiOTJlYzlmZWUtNTE2ZC00M2U1LWE5ODEtYjQxOGE5YzljYzYzIiwic291cmNlcyI6WyJkY2Q2YzcxOC02OTFhLTQxMzYtYmYwOC04NzJjZTdjNmE2NzEiLCI3ODIwMWZmMy0wMTY5LTRlMmYtYWMzNS0xM2ZkYmRlZDdlZWMiLCJjY2NiNGE5ZC1iZDgxLTQyZmEtYmVkYy0yMmEzMDc1YjVmMDIiXSwiZ3JhbnRfdHlwZSI6ImF1dGhvcml6YXRpb25fY29kZSIsInVzZXJfbmFtZSI6IjkyZWM5ZmVlLTUxNmQtNDNlNS1hOTgxLWI0MThhOWM5Y2M2MyIsInJvbGVzIjpbInByb2plY3QtdGVzdC0xMDpST0xFX1BBUlRJQ0lQQU5UIl0sInNjb3BlIjpbIk1FQVNVUkVNRU5ULkNSRUFURSIsIlNVQkpFQ1QuUkVBRCIsIlNVQkpFQ1QuVVBEQVRFIl0sImlzcyI6Ik1hbmFnZW1lbnRQb3J0YWwiLCJleHAiOjE2ODMyMzY3ODksImlhdCI6MTY4MzE5MzU4OSwiYXV0aG9yaXRpZXMiOlsiUk9MRV9QQVJUSUNJUEFOVCJdLCJjbGllbnRfaWQiOiJwUk1UIn0.357o7TLjEItuN8NS_i7F_L5G3qEU0Qs8f07boS3AkBCBWTEmYPesFWYN55cilPso6E_5ZWfAQA1eLKORnFF1Ng',
+                        projectId: "project-test-10",
+                        userId: "92ec9fee-516d-43e5-a981-b418a9c9cc63"
+                    },{
+                        success: function (authRes) {
+                            console.log('setAuthentication successfully! authRes:', authRes)
                         }
                     })
-                }, 1000);
+                }
+            })
+        }
+    })
+
+    RadarPassivePlugin.registerPluginListener({
+        success: function (plugins) {
+            if (plugins && plugins.length) {
+                console.log("Enabled plugins ", JSON.stringify(plugins))
+                setTimeout(function() {
+                    RadarPassivePlugin.serverStatus({
+                        success: function (serverStatus) {
+                            console.log('Configured successfully! serverStatus', serverStatus)
+                        }
+                    })
+                    RadarPassivePlugin.startScanning({
+                        success: function() {
+                            console.log("Started scanning!")
+                        }
+                    })
+                    RadarPassivePlugin.permissionsNeeded({
+                        success: function (permissionsNeeded) {
+                            console.log("permissions needed: ", JSON.stringify(permissionsNeeded))
+                        }
+                    })
+                }, 1000)
+            } else {
+                console.log("No plugins enabled")
             }
-        })
-    }, 1000);
+        }
+    })
 }
