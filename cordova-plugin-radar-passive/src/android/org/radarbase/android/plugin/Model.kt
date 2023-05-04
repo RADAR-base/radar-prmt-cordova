@@ -1,6 +1,13 @@
-package org.radarbase.cordova.plugin.passive
+package org.radarbase.android.plugin
 
 import org.radarbase.android.source.SourceStatusListener
+
+interface ResultListener<T> {
+    val id: Int?
+    fun next(value: T)
+    fun error(message: String)
+    fun success(value: T)
+}
 
 data class SourceStatus(
     val plugin: String,

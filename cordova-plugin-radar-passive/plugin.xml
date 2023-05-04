@@ -20,12 +20,14 @@
 
     <!-- android -->
     <platform name="android">
+        <source-file src="src/android/org/radarbase/android/plugin/RadarPassive.kt" target-dir="app/src/main/kotlin/org/radarbase/android/plugin"/>
+        <source-file src="src/android/org/radarbase/android/plugin/Model.kt" target-dir="app/src/main/kotlin/org/radarbase/android/plugin"/>
+        <source-file src="src/android/org/radarbase/android/plugin/Util.kt" target-dir="app/src/main/kotlin/org/radarbase/android/plugin"/>
+
         <source-file src="src/android/org/radarbase/cordova/plugin/passive/RadarPassivePlugin.kt" target-dir="app/src/main/kotlin/org/radarbase/cordova/plugin/passive"/>
-        <source-file src="src/android/org/radarbase/cordova/plugin/passive/RadarPassive.kt" target-dir="app/src/main/kotlin/org/radarbase/cordova/plugin/passive"/>
-        <source-file src="src/android/org/radarbase/cordova/plugin/passive/Util.kt" target-dir="app/src/main/kotlin/org/radarbase/cordova/plugin/passive"/>
         <source-file src="src/android/org/radarbase/cordova/plugin/passive/RadarServiceImpl.kt" target-dir="app/src/main/kotlin/org/radarbase/cordova/plugin/passive"/>
         <source-file src="src/android/org/radarbase/cordova/plugin/passive/AuthServiceImpl.kt" target-dir="app/src/main/kotlin/org/radarbase/cordova/plugin/passive"/>
-        <source-file src="src/android/org/radarbase/cordova/plugin/passive/Model.kt" target-dir="app/src/main/kotlin/org/radarbase/cordova/plugin/passive"/>
+        <source-file src="src/android/org/radarbase/cordova/plugin/passive/Util.kt" target-dir="app/src/main/kotlin/org/radarbase/cordova/plugin/passive"/>
         <framework src="src/android/plugin.gradle" custom="true" type="gradleReference"/>
 
         <config-file target="AndroidManifest.xml" parent="/manifest/application">

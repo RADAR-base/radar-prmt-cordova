@@ -1,41 +1,30 @@
 package org.radarbase.cordova.plugin.passive
 
-import android.util.SparseArray
 import org.apache.cordova.CallbackContext
 import org.apache.cordova.PluginResult
 import org.json.JSONArray
 import org.json.JSONObject
-import org.radarbase.android.data.DataHandler
-import java.lang.IllegalArgumentException
+import org.radarbase.android.plugin.Authentication
+import org.radarbase.android.plugin.FlushProgress
+import org.radarbase.android.plugin.FlushResult
+import org.radarbase.android.plugin.ResultListener
+import org.radarbase.android.plugin.SendStatus
+import org.radarbase.android.plugin.SendSuccess
+import org.radarbase.android.plugin.SourceStatus
 
-class ContextFlushCallback(private val listener: ResultListener<FlushResult>) : DataHandler.FlushCallback {
-    override fun success() {
-        listener.success(FlushSuccess)
-    }
-    override fun error(ex: Throwable) {
-        listener.error(ex.toString())
-    }
-    override fun progress(current: Long, total: Long) {
-        listener.next(FlushProgress(current, total))
-    }
-}
-
-interface ResultListener<T> {
-    val id: Int
-    fun next(value: T)
-    fun error(message: String)
-    fun success(value: T)
-}
-
-class CallbackResultListener<T: Any>(
-    override val id: Int,
+internal class CallbackResultListener<T: Any>(
     private val callbackContext: CallbackContext,
+    override val id: Int? = null,
     private val transform: T.() -> Any = { this },
 ) : ResultListener<T> {
     override fun next(value: T) {
         when (val result = value.transform()) {
-            is String -> callbackContext.next(result)
-            is JSONObject -> callbackContext.next(result)
+            is String -> callbackContext.sendPluginResult(PluginResult(PluginResult.Status.OK, result).apply {
+                keepCallback = true
+            })
+            is JSONObject -> callbackContext.sendPluginResult(PluginResult(PluginResult.Status.OK, result).apply {
+                keepCallback = true
+            })
             else -> throw IllegalArgumentException("Unknown result type ${result.javaClass}")
         }
     }
@@ -52,59 +41,10 @@ class CallbackResultListener<T: Any>(
     }
 }
 
-class ResultListeners<T> {
-    private val sparseArray = SparseArray<ResultListener<T>>()
-
-    @Synchronized
-    fun next(value: T) {
-        repeat(sparseArray.size()) { idx ->
-            sparseArray.valueAt(idx).next(value)
-        }
-    }
-
-    @Synchronized
-    fun success(value: T) {
-        repeat(sparseArray.size()) { idx ->
-            sparseArray.valueAt(idx).success(value)
-        }
-        clear()
-    }
-
-    @Synchronized
-    fun error(message: String) {
-        repeat(sparseArray.size()) { idx ->
-            sparseArray.valueAt(idx).error(message)
-        }
-        clear()
-    }
-
-    @Synchronized
-    operator fun plusAssign(listener: ResultListener<T>) {
-        sparseArray[listener.id] = listener
-    }
-
-    @Synchronized
-    operator fun minusAssign(id: Int) {
-        sparseArray.remove(id)
-    }
-
-    @Synchronized
-    fun clear() {
-        sparseArray.clear()
-    }
-}
-
-internal fun CallbackContext.next(result: String) {
-    sendPluginResult(PluginResult(PluginResult.Status.OK, result).apply {
-        keepCallback = true
-    })
-}
-
-internal fun CallbackContext.next(result: JSONObject) {
-    sendPluginResult(PluginResult(PluginResult.Status.OK, result).apply {
-        keepCallback = true
-    })
-}
+internal fun <T: Any> CallbackContext.toListener(
+    id: Int? = null,
+    transform: T.() -> Any = { this },
+): ResultListener<T> = CallbackResultListener(this, id, transform)
 
 internal fun jsonObject(builder: JSONObject.() -> Unit) = JSONObject().apply(builder)
 

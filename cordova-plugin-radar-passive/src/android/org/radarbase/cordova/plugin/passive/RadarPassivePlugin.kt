@@ -6,19 +6,22 @@ import org.apache.cordova.CordovaInterface
 import org.apache.cordova.CordovaPlugin
 import org.apache.cordova.CordovaWebView
 import org.json.JSONArray
-import java.util.concurrent.atomic.AtomicInteger
+import org.radarbase.android.plugin.RadarPassive
 
 /**
  * This class echoes a string called from JavaScript.
  */
 class RadarPassivePlugin : CordovaPlugin() {
     private lateinit var radarPassive: RadarPassive
-    private val startCallbackCounter = AtomicInteger(0)
 
     override fun initialize(cordova: CordovaInterface, webView: CordovaWebView) {
         super.initialize(cordova, webView)
 
-        radarPassive = RadarPassive(cordova.context)
+        radarPassive = RadarPassive(
+            cordova.context,
+            RadarServiceImpl::class.java,
+            AuthServiceImpl::class.java
+        )
     }
 
     override fun execute(
@@ -34,12 +37,10 @@ class RadarPassivePlugin : CordovaPlugin() {
                         callbackContext.success()
                     }
                     "setAuthentication" -> {
-                        setAuthentication(
-                            args.optJSONObject(0)?.toAuthentication()
-                        )
+                        setAuthentication(args.optJSONObject(0)?.toAuthentication())
                         callbackContext.success()
                     }
-                    "start" -> start(CallbackResultListener(startCallbackCounter.incrementAndGet(), callbackContext))
+                    "start" -> start(callbackContext.toListener())
                     "startScanning" -> {
                         startScanning()
                         callbackContext.success()
@@ -54,7 +55,7 @@ class RadarPassivePlugin : CordovaPlugin() {
                     }
                     "serverStatus" -> callbackContext.success(serverStatus().toString())
                     "registerServerStatusListener" -> {
-                        serverStatusListeners += CallbackResultListener(args.getInt(0), callbackContext) {
+                        serverStatusListeners += callbackContext.toListener(args.getInt(0)) {
                             name
                         }
                     }
@@ -70,7 +71,7 @@ class RadarPassivePlugin : CordovaPlugin() {
                         })
                     }
                     "registerSourceStatusListener" -> {
-                        sourceStatusListeners += CallbackResultListener(args.getInt(0), callbackContext) {
+                        sourceStatusListeners += callbackContext.toListener(args.getInt(0)) {
                             toJSONObject()
                         }
                     }
@@ -79,7 +80,7 @@ class RadarPassivePlugin : CordovaPlugin() {
                         callbackContext.success()
                     }
                     "registerSendListener" -> {
-                        sendListeners += CallbackResultListener(args.getInt(0), callbackContext) {
+                        sendListeners += callbackContext.toListener(args.getInt(0)) {
                             toJSONObject()
                         }
                     }
@@ -114,7 +115,7 @@ class RadarPassivePlugin : CordovaPlugin() {
                         callbackContext.success()
                     }
                     "flushCaches" -> flushCaches(
-                        CallbackResultListener(startCallbackCounter.incrementAndGet(), callbackContext) {
+                        callbackContext.toListener {
                             toJSONObject()
                         }
                     )

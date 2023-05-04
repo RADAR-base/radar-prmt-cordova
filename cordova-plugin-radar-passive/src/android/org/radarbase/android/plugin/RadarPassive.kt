@@ -1,4 +1,4 @@
-package org.radarbase.cordova.plugin.passive
+package org.radarbase.android.plugin
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -9,6 +9,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import org.radarbase.android.IRadarBinder
 import org.radarbase.android.RadarConfiguration
 import org.radarbase.android.RadarConfiguration.Companion.BASE_URL_KEY
+import org.radarbase.android.RadarService
 import org.radarbase.android.auth.AuthService
 import org.radarbase.android.kafka.ServerStatusListener
 import org.radarbase.android.source.SourceService
@@ -22,18 +23,22 @@ import org.radarbase.android.util.ManagedServiceConnection
 /**
  * This class echoes a string called from JavaScript.
  */
-class RadarPassive(context: Context) {
+class RadarPassive(
+    context: Context,
+    radarServiceClass: Class<out RadarService>,
+    authServiceClass: Class<out AuthService>,
+) {
     private val broadcastManager: LocalBroadcastManager = LocalBroadcastManager.getInstance(context)
-    private val radarServiceConnection: ManagedServiceConnection<IRadarBinder> = ManagedServiceConnection(context, RadarServiceImpl::class.java)
-    private val authServiceConnection: ManagedServiceConnection<AuthService.AuthServiceBinder> = ManagedServiceConnection(context, AuthServiceImpl::class.java)
+    private val radarServiceConnection: ManagedServiceConnection<IRadarBinder> = ManagedServiceConnection(context, radarServiceClass)
+    private val authServiceConnection: ManagedServiceConnection<AuthService.AuthServiceBinder> = ManagedServiceConnection(context, authServiceClass)
 
     private val config: RadarConfiguration = RadarConfiguration.getInstance(context)
     private var localAuthentication: Authentication? = null
     private val statusReceiver: BroadcastReceiver
-    private val bindListeners = ResultListeners<Unit>()
-    val serverStatusListeners = ResultListeners<ServerStatusListener.Status>()
-    val sourceStatusListeners = ResultListeners<SourceStatus>()
-    val sendListeners = ResultListeners<SendStatus>()
+    private val bindListeners = ResultListenerList<Unit>()
+    val serverStatusListeners = ResultListenerList<ServerStatusListener.Status>()
+    val sourceStatusListeners = ResultListenerList<SourceStatus>()
+    val sendListeners = ResultListenerList<SendStatus>()
 
     private val radarService: IRadarBinder
         get() = checkNotNull(radarServiceConnection.binder) {
