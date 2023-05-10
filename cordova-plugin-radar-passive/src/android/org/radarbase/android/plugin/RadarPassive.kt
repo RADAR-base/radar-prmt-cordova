@@ -10,6 +10,7 @@ import org.radarbase.android.IRadarBinder
 import org.radarbase.android.RadarConfiguration
 import org.radarbase.android.RadarConfiguration.Companion.BASE_URL_KEY
 import org.radarbase.android.RadarService
+import org.radarbase.android.RadarService.Companion.ACTION_PROVIDERS_UPDATED
 import org.radarbase.android.auth.AuthService
 import org.radarbase.android.kafka.ServerStatusListener
 import org.radarbase.android.source.SourceService
@@ -38,6 +39,7 @@ class RadarPassive(
     private val bindListeners = ResultListenerList<Unit>()
     val serverStatusListeners = ResultListenerList<ServerStatusListener.Status>()
     val sourceStatusListeners = ResultListenerList<SourceStatus>()
+    val pluginsUpdatedListeners = ResultListenerList<List<String>>()
     val sendListeners = ResultListenerList<SendStatus>()
 
     private val radarService: IRadarBinder
@@ -46,14 +48,15 @@ class RadarPassive(
         }
 
     init {
-        AuthService.authServiceClass = authServiceClass
+        AuthService.serviceClass = authServiceClass
+        RadarService.serviceClass = radarServiceClass
         statusReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 val action = intent?.action ?: return
                 when (action) {
                     SERVER_RECORDS_SENT_TOPIC -> onSendEvent(
                         topic = intent.getStringExtra(SERVER_RECORDS_SENT_TOPIC) ?: return,
-                        numberOfRecords = intent.getIntExtra(SourceService.SERVER_RECORDS_SENT_NUMBER, 0),
+                        numberOfRecords = intent.getLongExtra(SourceService.SERVER_RECORDS_SENT_NUMBER, 0),
                     )
                     SERVER_STATUS_CHANGED -> onServerStatusEvent(
                         status = ServerStatusListener.Status.values()[intent.getIntExtra(SERVER_STATUS_CHANGED, 0)],
@@ -63,6 +66,7 @@ class RadarPassive(
                         status = SourceStatusListener.Status.values()[intent.getIntExtra(SOURCE_STATUS_CHANGED, 0)],
                         sourceName = intent.getStringExtra(SourceService.SOURCE_STATUS_NAME),
                     )
+                    ACTION_PROVIDERS_UPDATED -> onProvidersUpdatedEvent()
                 }
             }
         }
@@ -104,6 +108,7 @@ class RadarPassive(
                 userId = null
                 projectId = null
                 token = null
+                needsRegisteredSources = false
                 attributes -= BASE_URL_KEY
                 headers.clear()
             } else {
@@ -111,6 +116,8 @@ class RadarPassive(
                 projectId = auth.projectId
                 token = auth.token
                 attributes[BASE_URL_KEY] = auth.baseUrl
+                needsRegisteredSources = false
+                isValid = true
                 if (token != null) {
                     headers.removeAll { (header, _) -> header == "Authorization" }
                     headers.add("Authorization" to "Bearer $token")
@@ -125,6 +132,7 @@ class RadarPassive(
             addAction(SERVER_RECORDS_SENT_TOPIC)
             addAction(SOURCE_STATUS_CHANGED)
             addAction(SERVER_STATUS_CHANGED)
+            addAction(ACTION_PROVIDERS_UPDATED)
         })
         radarServiceConnection.bind()
         authServiceConnection.bind()
@@ -148,12 +156,24 @@ class RadarPassive(
     }
 
     fun permissionsNeeded(): Map<String, List<String>> = buildMap {
+        println("!@#$ permissionsNeeded")
+        radarService.permissionsNeeded.forEach { permission ->
+            println("!@#$ permissionsNeeded permission: $permission")
+
+            val pluginList = computeIfAbsent(permission) { mutableListOf() } as MutableList<String>
+            pluginList += "radar_service"
+        }
         radarService.connections.forEach { provider ->
+            println("!@#$ permissionsNeeded provider: $provider")
+
             provider.permissionsNeeded.forEach { permission ->
+                println("!@#$ permissionsNeeded permission2: $permission")
+
                 val pluginList = computeIfAbsent(permission) { mutableListOf() } as MutableList<String>
                 pluginList += provider.pluginName
             }
         }
+
     }
 
     fun flushCaches(resultListener: ResultListener<FlushResult>) {
@@ -186,7 +206,7 @@ class RadarPassive(
         serverStatusListeners.next(status)
     }
 
-    fun onSendEvent(topic: String, numberOfRecords: Int) {
+    fun onSendEvent(topic: String, numberOfRecords: Long) {
         val result = if (numberOfRecords >= 0) {
             SendSuccess(topic, numberOfRecords)
         } else {
@@ -194,6 +214,11 @@ class RadarPassive(
         }
 
         sendListeners.next(result)
+    }
+
+
+    private fun onProvidersUpdatedEvent() {
+        pluginsUpdatedListeners.next(radarService.connections.map { it.pluginName })
     }
 
     fun setAllowedSourceIds(pluginName: String, sourceIds: List<String>) {

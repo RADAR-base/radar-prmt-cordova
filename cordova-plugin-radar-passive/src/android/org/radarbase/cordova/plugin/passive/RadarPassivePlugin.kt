@@ -81,6 +81,15 @@ class RadarPassivePlugin : CordovaPlugin() {
                         sourceStatusListeners -= args.getInt(0)
                         callbackContext.success()
                     }
+                    "registerPluginListener" -> {
+                        pluginsUpdatedListeners += callbackContext.toListener(args.getInt(0)) {
+                            JSONArray(this)
+                        }
+                    }
+                    "unregisterPluginListener" -> {
+                        pluginsUpdatedListeners -= args.getInt(0)
+                        callbackContext.success()
+                    }
                     "registerSendListener" -> {
                         sendListeners += callbackContext.toListener(args.getInt(0)) {
                             toJSONObject()

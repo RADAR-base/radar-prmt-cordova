@@ -58,6 +58,9 @@ interface RadarPassivePlugin {
   /** Get notified of any attempt to send data to the server. */
   registerSendListener(callback: RadarPassiveCallback<SendEvent>): ListenerRegistration
 
+  /** Get notified of any changes to currently enabled plugins. */
+  registerPluginListener(callback: RadarPassiveCallback<string[]>): ListenerRegistration
+
   /**
    * Get the number of records in cache. This number is an approximation because
    * data have been sent while the function is called.

@@ -16,7 +16,7 @@ data class SourceStatus(
 )
 
 sealed class SendStatus(val topic: String)
-class SendSuccess(topic: String, val numberOfRecords: Int) : SendStatus(topic)
+class SendSuccess(topic: String, val numberOfRecords: Long) : SendStatus(topic)
 class SendError(topic: String) : SendStatus(topic)
 
 sealed interface FlushResult
