@@ -78,7 +78,8 @@ function onDeviceReady() {
                             RadarPassivePlugin.setAuthentication({
                                 baseUrl: "https://radar-k3s-test.thehyve.net",
                                 // token: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJhdWQiOlsicmVzX2FwcGNvbmZpZyIsInJlc19nYXRld2F5IiwicmVzX01hbmFnZW1lbnRQb3J0YWwiXSwic3ViIjoiOTJlYzlmZWUtNTE2ZC00M2U1LWE5ODEtYjQxOGE5YzljYzYzIiwic291cmNlcyI6WyJkY2Q2YzcxOC02OTFhLTQxMzYtYmYwOC04NzJjZTdjNmE2NzEiLCI3ODIwMWZmMy0wMTY5LTRlMmYtYWMzNS0xM2ZkYmRlZDdlZWMiLCJjY2NiNGE5ZC1iZDgxLTQyZmEtYmVkYy0yMmEzMDc1YjVmMDIiXSwiZ3JhbnRfdHlwZSI6ImF1dGhvcml6YXRpb25fY29kZSIsInVzZXJfbmFtZSI6IjkyZWM5ZmVlLTUxNmQtNDNlNS1hOTgxLWI0MThhOWM5Y2M2MyIsInJvbGVzIjpbInByb2plY3QtdGVzdC0xMDpST0xFX1BBUlRJQ0lQQU5UIl0sInNjb3BlIjpbIk1FQVNVUkVNRU5ULkNSRUFURSIsIlNVQkpFQ1QuUkVBRCIsIlNVQkpFQ1QuVVBEQVRFIl0sImlzcyI6Ik1hbmFnZW1lbnRQb3J0YWwiLCJleHAiOjE2ODMxNTAzODMsImlhdCI6MTY4MzEwNzE4MywiYXV0aG9yaXRpZXMiOlsiUk9MRV9QQVJUSUNJUEFOVCJdLCJjbGllbnRfaWQiOiJwUk1UIn0.EUh03i41rBRMpqnaUsf4fnB5I0m0_A0Nvxo846a2xUMQwfSi0yZ9uuv4q_O2dTOm7pVAhKwL5er7UmlfCG4S6w',
-                                token: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJhdWQiOlsicmVzX2FwcGNvbmZpZyIsInJlc19nYXRld2F5IiwicmVzX01hbmFnZW1lbnRQb3J0YWwiXSwic3ViIjoiOTJlYzlmZWUtNTE2ZC00M2U1LWE5ODEtYjQxOGE5YzljYzYzIiwic291cmNlcyI6WyJkY2Q2YzcxOC02OTFhLTQxMzYtYmYwOC04NzJjZTdjNmE2NzEiLCI3ODIwMWZmMy0wMTY5LTRlMmYtYWMzNS0xM2ZkYmRlZDdlZWMiLCJjY2NiNGE5ZC1iZDgxLTQyZmEtYmVkYy0yMmEzMDc1YjVmMDIiXSwiZ3JhbnRfdHlwZSI6ImF1dGhvcml6YXRpb25fY29kZSIsInVzZXJfbmFtZSI6IjkyZWM5ZmVlLTUxNmQtNDNlNS1hOTgxLWI0MThhOWM5Y2M2MyIsInJvbGVzIjpbInByb2plY3QtdGVzdC0xMDpST0xFX1BBUlRJQ0lQQU5UIl0sInNjb3BlIjpbIk1FQVNVUkVNRU5ULkNSRUFURSIsIlNVQkpFQ1QuUkVBRCIsIlNVQkpFQ1QuVVBEQVRFIl0sImlzcyI6Ik1hbmFnZW1lbnRQb3J0YWwiLCJleHAiOjE2ODMyMzY3ODksImlhdCI6MTY4MzE5MzU4OSwiYXV0aG9yaXRpZXMiOlsiUk9MRV9QQVJUSUNJUEFOVCJdLCJjbGllbnRfaWQiOiJwUk1UIn0.357o7TLjEItuN8NS_i7F_L5G3qEU0Qs8f07boS3AkBCBWTEmYPesFWYN55cilPso6E_5ZWfAQA1eLKORnFF1Ng',
+                                // token: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJhdWQiOlsicmVzX2FwcGNvbmZpZyIsInJlc19nYXRld2F5IiwicmVzX01hbmFnZW1lbnRQb3J0YWwiXSwic3ViIjoiOTJlYzlmZWUtNTE2ZC00M2U1LWE5ODEtYjQxOGE5YzljYzYzIiwic291cmNlcyI6WyJkY2Q2YzcxOC02OTFhLTQxMzYtYmYwOC04NzJjZTdjNmE2NzEiLCI3ODIwMWZmMy0wMTY5LTRlMmYtYWMzNS0xM2ZkYmRlZDdlZWMiLCJjY2NiNGE5ZC1iZDgxLTQyZmEtYmVkYy0yMmEzMDc1YjVmMDIiXSwiZ3JhbnRfdHlwZSI6ImF1dGhvcml6YXRpb25fY29kZSIsInVzZXJfbmFtZSI6IjkyZWM5ZmVlLTUxNmQtNDNlNS1hOTgxLWI0MThhOWM5Y2M2MyIsInJvbGVzIjpbInByb2plY3QtdGVzdC0xMDpST0xFX1BBUlRJQ0lQQU5UIl0sInNjb3BlIjpbIk1FQVNVUkVNRU5ULkNSRUFURSIsIlNVQkpFQ1QuUkVBRCIsIlNVQkpFQ1QuVVBEQVRFIl0sImlzcyI6Ik1hbmFnZW1lbnRQb3J0YWwiLCJleHAiOjE2ODMyMzY3ODksImlhdCI6MTY4MzE5MzU4OSwiYXV0aG9yaXRpZXMiOlsiUk9MRV9QQVJUSUNJUEFOVCJdLCJjbGllbnRfaWQiOiJwUk1UIn0.357o7TLjEItuN8NS_i7F_L5G3qEU0Qs8f07boS3AkBCBWTEmYPesFWYN55cilPso6E_5ZWfAQA1eLKORnFF1Ng',
+                                token: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJhdWQiOlsicmVzX2FwcGNvbmZpZyIsInJlc19nYXRld2F5IiwicmVzX01hbmFnZW1lbnRQb3J0YWwiXSwic3ViIjoiOTJlYzlmZWUtNTE2ZC00M2U1LWE5ODEtYjQxOGE5YzljYzYzIiwic291cmNlcyI6WyJkY2Q2YzcxOC02OTFhLTQxMzYtYmYwOC04NzJjZTdjNmE2NzEiLCI3ODIwMWZmMy0wMTY5LTRlMmYtYWMzNS0xM2ZkYmRlZDdlZWMiLCJjY2NiNGE5ZC1iZDgxLTQyZmEtYmVkYy0yMmEzMDc1YjVmMDIiXSwiZ3JhbnRfdHlwZSI6ImF1dGhvcml6YXRpb25fY29kZSIsInVzZXJfbmFtZSI6IjkyZWM5ZmVlLTUxNmQtNDNlNS1hOTgxLWI0MThhOWM5Y2M2MyIsInJvbGVzIjpbInByb2plY3QtdGVzdC0xMDpST0xFX1BBUlRJQ0lQQU5UIl0sInNjb3BlIjpbIk1FQVNVUkVNRU5ULkNSRUFURSIsIlNVQkpFQ1QuUkVBRCIsIlNVQkpFQ1QuVVBEQVRFIl0sImlzcyI6Ik1hbmFnZW1lbnRQb3J0YWwiLCJleHAiOjE2ODM1OTAxOTksImlhdCI6MTY4MzU0Njk5OSwiYXV0aG9yaXRpZXMiOlsiUk9MRV9QQVJUSUNJUEFOVCJdLCJjbGllbnRfaWQiOiJwUk1UIn0.7FjxqM47ycDGxXTBOTpDWLO8Wsb7HfSjrK4Dz4MtcpAylpjSAcXZMfMLYPNRliaaz7zXyjTrRGc5zBKTWbPtcw',
                                 projectId: "project-test-10",
                                 userId: "92ec9fee-516d-43e5-a981-b418a9c9cc63"
                             }, {
@@ -88,21 +89,18 @@ function onDeviceReady() {
                                         RadarPassivePlugin.serverStatus({
                                             success: function (serverStatus) {
                                                 console.log('Configured successfully! serverStatus', serverStatus)
-                                                setTimeout(function () {
-                                                    RadarPassivePlugin.startScanning({
-                                                        success: function () {
-                                                            console.log("Started scanning!")
-                                                        }
-                                                    })
-                                                    RadarPassivePlugin.permissionsNeeded({
-                                                        success: function (permissionsNeeded) {
-                                                            console.log("permissions needed: ", JSON.stringify(permissionsNeeded))
-                                                        }
-                                                    })
-                                                }, 1000);
                                             }
                                         })
-
+                                        RadarPassivePlugin.startScanning({
+                                            success: function () {
+                                                console.log("Started scanning!")
+                                            }
+                                        })
+                                        RadarPassivePlugin.permissionsNeeded({
+                                            success: function (permissionsNeeded) {
+                                                console.log("permissions needed: ", JSON.stringify(permissionsNeeded))
+                                            }
+                                        })
                                     }, 1000)
                                 }
                             })

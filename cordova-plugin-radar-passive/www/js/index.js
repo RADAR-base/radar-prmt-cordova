@@ -1,34 +1,10 @@
-/*
- *
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- *
- */
-
-/**
- * This class contains information about the current battery status.
- * @constructor
- */
 var exec = require('cordova/exec');
 
 var RadarPassivePlugin = function () {
     this._serverStatusListenerId = 0
     this._sourceStatusListenerId = 0
     this._sendListenerId = 0
+    this._pluginListenerId = 0
 }
 
 RadarPassivePlugin.prototype._error = function (err) {
@@ -98,7 +74,7 @@ RadarPassivePlugin.prototype.serverStatus = function(callback) {
     this.exec('serverStatus', callback)
 }
 
-function registerListener(id, type, callback) {
+RadarPassivePlugin.prototype._registerListener = function(id, type, callback) {
     var _exec = this.exec
     _exec('register' + type + 'Listener', callback, [id])
     return {
@@ -109,7 +85,7 @@ function registerListener(id, type, callback) {
 }
 
 RadarPassivePlugin.prototype.registerServerStatusListener = function(callback) {
-    return registerListener(++this._serverStatusListenerId, 'ServerStatus', callback)
+    return this._registerListener(++this._serverStatusListenerId, 'ServerStatus', callback)
 }
 
 /**
@@ -120,13 +96,18 @@ RadarPassivePlugin.prototype.sourceStatus = function(callback) {
 }
 
 RadarPassivePlugin.prototype.registerSourceStatusListener = function(callback) {
-    return registerListener(++this._sourceStatusListenerId, 'SourceStatus', callback)
+    return this._registerListener(++this._sourceStatusListenerId, 'SourceStatus', callback)
 }
 
 /** Get notified of any attempt to send data to the server. */
 
 RadarPassivePlugin.prototype.registerSendListener = function(callback) {
-    return registerListener(++this._sendListenerId, 'Send', callback)
+    return this._registerListener(++this._sendListenerId, 'Send', callback)
+}
+
+
+RadarPassivePlugin.prototype.registerPluginListener = function(callback) {
+    return this._registerListener(++this._pluginListenerId, 'Plugin', callback)
 }
 
 /**
