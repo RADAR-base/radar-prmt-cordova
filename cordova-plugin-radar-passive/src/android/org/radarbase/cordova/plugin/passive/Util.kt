@@ -61,7 +61,7 @@ internal fun JSONArray.toStringList(): List<String> = buildList(length()) {
     }
 }
 
-fun SourceStatus.toJSONObject(): JSONObject = jsonObject {
+internal fun SourceStatus.toJSONObject(): JSONObject = jsonObject {
     put("plugin", plugin)
     put("status", status)
     if (sourceName != null) {
@@ -69,7 +69,7 @@ fun SourceStatus.toJSONObject(): JSONObject = jsonObject {
     }
 }
 
-fun SendStatus.toJSONObject(): JSONObject = jsonObject {
+internal fun SendStatus.toJSONObject(): JSONObject = jsonObject {
     put("topic", topic)
     if (this@toJSONObject is SendSuccess) {
         put("status", "SUCCESS")
@@ -79,7 +79,7 @@ fun SendStatus.toJSONObject(): JSONObject = jsonObject {
     }
 }
 
-fun FlushResult.toJSONObject(): JSONObject = if (this is FlushProgress) {
+internal fun FlushResult.toJSONObject(): JSONObject = if (this is FlushProgress) {
     jsonObject {
         put("type", "progress")
         put("current", current)
