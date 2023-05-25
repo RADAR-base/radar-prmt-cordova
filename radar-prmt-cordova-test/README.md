@@ -2,7 +2,7 @@
 
 ## Installation
 
-First install `E4link-1.0.0.pom` to your local Maven repository as described in [RADAR Empatica plugin](https://github.com/RADAR-base/radar-commons-android/blob/simplify-setup/plugins/radar-android-empatica/README.md). Then build radar-commons-android with
+First install `E4link-1.0.0.pom` to your local Maven repository as described in [RADAR Empatica plugin](https://github.com/RADAR-base/radar-commons-android/blob/simplify-setup/plugins/radar-android-empatica/README.md). Then build [`simplify-setup` branch of radar-commons-android](https://github.com/RADAR-base/radar-commons-android/tree/simplify-setup) with
 ```
 ./gradlew publishToMavenLocal
 ```
