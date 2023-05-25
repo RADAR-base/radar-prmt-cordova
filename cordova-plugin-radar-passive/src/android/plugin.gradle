@@ -1,9 +1,10 @@
 repositories {
     mavenLocal()
+    maven { url = "https://oss.sonatype.org/content/repositories/snapshots" }
     maven { url 'https://repo.thehyve.nl/content/repositories/releases' }
 }
 
-ext.radarCommonsVersion = "1.2.3-SNAPSHOT"
+ext.radarCommonsVersion = "1.2.5-cordova-SNAPSHOT"
 
 dependencies {
     api "org.radarbase:radar-commons-android:$radarCommonsVersion"
