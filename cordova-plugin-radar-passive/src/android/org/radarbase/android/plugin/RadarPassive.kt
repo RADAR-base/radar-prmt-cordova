@@ -155,25 +155,12 @@ class RadarPassive(
         detach(false)
     }
 
-    fun permissionsNeeded(): Map<String, List<String>> = buildMap {
-        println("!@#$ permissionsNeeded")
-        radarService.permissionsNeeded.forEach { permission ->
-            println("!@#$ permissionsNeeded permission: $permission")
-
-            val pluginList = computeIfAbsent(permission) { mutableListOf() } as MutableList<String>
-            pluginList += "radar_service"
-        }
+    fun permissionsNeeded(): Map<String, Set<String>> = buildMap {
+        groupInverted("radar_service", radarService.permissionsNeeded)
         radarService.connections.forEach { provider ->
-            println("!@#$ permissionsNeeded provider: $provider")
-
-            provider.permissionsNeeded.forEach { permission ->
-                println("!@#$ permissionsNeeded permission2: $permission")
-
-                val pluginList = computeIfAbsent(permission) { mutableListOf() } as MutableList<String>
-                pluginList += provider.pluginName
-            }
+            groupInverted(provider.pluginName, provider.permissionsNeeded)
+            groupInverted(provider.pluginName, provider.permissionsRequested)
         }
-
     }
 
     fun flushCaches(resultListener: ResultListener<FlushResult>) {
@@ -276,5 +263,12 @@ class RadarPassive(
     companion object {
         private const val TAG = "RadarPassivePlugin"
         val bluetoothPermissionSet = bluetoothPermissionList.toHashSet()
+
+        private fun <T, K> MutableMap<K, Set<T>>.groupInverted(value: T, keys: Iterable<K>) {
+            keys.forEach { key ->
+                val set = computeIfAbsent(key) { HashSet() } as MutableSet<T>
+                set.add(value)
+            }
+        }
     }
 }

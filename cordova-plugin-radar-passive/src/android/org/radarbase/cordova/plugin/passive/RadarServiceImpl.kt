@@ -6,6 +6,7 @@ import org.radarbase.monitor.application.ApplicationStatusProvider
 import org.radarbase.passive.audio.OpenSmileAudioProvider
 import org.radarbase.passive.bittium.FarosProvider
 import org.radarbase.passive.empatica.E4Provider
+import org.radarbase.passive.google.healthconnect.HealthConnectProvider
 import org.radarbase.passive.phone.PhoneBluetoothProvider
 import org.radarbase.passive.phone.PhoneContactListProvider
 import org.radarbase.passive.phone.PhoneLocationProvider
@@ -25,5 +26,6 @@ class RadarServiceImpl : RadarService() {
         E4Provider(this),
         WeatherApiProvider(this),
         OpenSmileAudioProvider(this),
+        HealthConnectProvider(this),
     )
 }

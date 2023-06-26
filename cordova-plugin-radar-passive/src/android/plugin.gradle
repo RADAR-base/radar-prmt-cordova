@@ -7,6 +7,9 @@ repositories {
 ext.radarCommonsVersion = "1.2.5-cordova-SNAPSHOT"
 
 dependencies {
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.20")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.20")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.20")
     api "org.radarbase:radar-commons-android:$radarCommonsVersion"
     implementation "org.radarbase:radar-android-phone:$radarCommonsVersion"
     implementation "org.radarbase:radar-android-phone-usage:$radarCommonsVersion"
@@ -15,6 +18,7 @@ dependencies {
     implementation "org.radarbase:radar-android-weather:$radarCommonsVersion"
     implementation "org.radarbase:radar-android-audio:$radarCommonsVersion"
     implementation "org.radarbase:radar-android-faros:$radarCommonsVersion"
+    implementation "org.radarbase:radar-android-health-connect:$radarCommonsVersion"
 
     implementation "androidx.localbroadcastmanager:localbroadcastmanager:1.1.0"
 }
