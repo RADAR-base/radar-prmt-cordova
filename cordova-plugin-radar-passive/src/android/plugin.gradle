@@ -4,7 +4,7 @@ repositories {
     maven { url 'https://repo.thehyve.nl/content/repositories/releases' }
 }
 
-ext.radarCommonsVersion = "1.2.5-cordova-SNAPSHOT"
+ext.radarCommonsVersion = "1.2.6-cordova-SNAPSHOT"
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.20")
