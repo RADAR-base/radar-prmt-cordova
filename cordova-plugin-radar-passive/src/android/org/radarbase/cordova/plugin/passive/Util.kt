@@ -55,10 +55,20 @@ internal fun JSONObject.toStringMap(): Map<String, String?> = buildMap(length())
     }
 }
 
+internal fun JSONArray.toStringSet(): Set<String> = buildSet(length()) {
+    repeat(length()) { idx ->
+        add(getString(idx))
+    }
+}
+
 internal fun JSONArray.toStringList(): List<String> = buildList(length()) {
     repeat(length()) { idx ->
         add(getString(idx))
     }
+}
+
+internal fun Collection<String>.toJSONArray(): JSONArray = JSONArray().apply {
+    this@toJSONArray.forEach { put(it) }
 }
 
 internal fun SourceStatus.toJSONObject(): JSONObject = jsonObject {

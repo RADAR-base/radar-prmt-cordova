@@ -20,6 +20,7 @@ import org.radarbase.android.source.SourceService.Companion.SOURCE_STATUS_CHANGE
 import org.radarbase.android.source.SourceStatusListener
 import org.radarbase.android.util.BluetoothStateReceiver.Companion.bluetoothPermissionList
 import org.radarbase.android.util.ManagedServiceConnection
+import org.radarbase.android.util.PermissionRequester
 
 /**
  * This class echoes a string called from JavaScript.
@@ -41,6 +42,8 @@ class RadarPassive(
     val sourceStatusListeners = ResultListenerList<SourceStatus>()
     val pluginsUpdatedListeners = ResultListenerList<List<String>>()
     val sendListeners = ResultListenerList<SendStatus>()
+    val requestPermissionRequesters: List<PermissionRequester>
+        get() = radarService.permissionRequesters
 
     private val radarService: IRadarBinder
         get() = checkNotNull(radarServiceConnection.binder) {

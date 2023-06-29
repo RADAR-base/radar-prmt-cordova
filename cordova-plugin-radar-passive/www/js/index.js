@@ -135,6 +135,23 @@ RadarPassivePlugin.prototype.onAcquiredPermissions = function (permissions, call
 }
 
 /**
+ * Query which permissions can be requested on behalf of the app. Only the permissions
+ * returned by this callback can be used in {@link requestPermissions}.
+ */
+RadarPassivePlugin.prototype.requestPermissionsSupported = function(callback) {
+    this.exec('requestPermissionsSupported', callback);
+}
+
+/**
+ * Request permissions. The first permission handler that is encountered that matches any of the
+ * requested permissions will be invoked. Permissions that were granted as result of the
+ * permission request will be provided back in the callback.
+ */
+RadarPassivePlugin.prototype.requestPermissions = function(permissions, callback) {
+    this.exec('requestPermissions', callback, [permissions]);
+}
+
+/**
  * Which plugins require bluetooth to function. If this list is non-empty and Bluetooth is turned
  * off, then the app should request the user to turn on Bluetooth again.
  */

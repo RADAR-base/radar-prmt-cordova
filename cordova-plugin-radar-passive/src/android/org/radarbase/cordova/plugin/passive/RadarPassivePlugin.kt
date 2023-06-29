@@ -1,18 +1,29 @@
 package org.radarbase.cordova.plugin.passive
 
+import android.content.Intent
 import android.util.Log
+import android.util.SparseArray
 import org.apache.cordova.CallbackContext
 import org.apache.cordova.CordovaInterface
 import org.apache.cordova.CordovaPlugin
 import org.apache.cordova.CordovaWebView
 import org.json.JSONArray
+import org.json.JSONObject
 import org.radarbase.android.plugin.RadarPassive
+import org.radarbase.android.plugin.ResultListener
+import org.radarbase.android.util.PermissionRequester
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentMap
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * This class echoes a string called from JavaScript.
  */
 class RadarPassivePlugin : CordovaPlugin() {
     private lateinit var radarPassive: RadarPassive
+    private val permissionRequests: ConcurrentMap<Int, PermissionRequestListener> = ConcurrentHashMap()
+    private val permissionRequestName = AtomicInteger(49201)
 
     override fun initialize(cordova: CordovaInterface, webView: CordovaWebView) {
         super.initialize(cordova, webView)
@@ -22,6 +33,8 @@ class RadarPassivePlugin : CordovaPlugin() {
             RadarServiceImpl::class.java,
             AuthServiceImpl::class.java
         )
+
+        cordova.setActivityResultCallback(this)
     }
 
     override fun execute(
@@ -86,6 +99,16 @@ class RadarPassivePlugin : CordovaPlugin() {
                             JSONArray(this)
                         }
                     }
+                    "requestPermissions" -> {
+                        val permissions = args.getJSONArray(0).toStringSet()
+                        val listener = callbackContext.toListener<Set<String>> { toJSONArray() }
+                        cordova.threadPool.execute {
+                            requestPermissions(permissions, listener)
+                        }
+                    }
+                    "requestPermissionsSupported" -> {
+                        callbackContext.success(requestPermissionsSupported())
+                    }
                     "unregisterPluginListener" -> {
                         pluginsUpdatedListeners -= args.getInt(0)
                         callbackContext.success()
@@ -137,18 +160,83 @@ class RadarPassivePlugin : CordovaPlugin() {
                 }
             }
         } catch (ex: Exception) {
+            Log.e(TAG, "Failed on action $action", ex)
             callbackContext.error("Failed on action $action: $ex")
         }
 
         return true
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
+        val (requester, listener, alreadyGranted) = permissionRequests.remove(requestCode)
+            ?: return
+        listener.success(
+            requester.contract.parseResult(resultCode, intent) + alreadyGranted
+        )
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         radarPassive.onDestroy()
+        permissionRequests.clear()
+    }
+
+    private fun requestPermissionsSupported() = JSONObject().apply {
+        radarPassive.requestPermissionRequesters.forEachIndexed { idx, requester ->
+            if (requester.permissions.isNotEmpty()) {
+                this@apply.put(idx.toString(), requester.permissions.toJSONArray())
+            }
+        }
+    }
+
+    private fun requestPermissions(permissions: Set<String>, listener: ResultListener<Set<String>>) {
+        val requester = radarPassive.requestPermissionRequesters
+            .firstNotNullOfOrNull {
+                val intersection = it.permissions.intersect(permissions)
+                if (intersection.isEmpty()) {
+                    null
+                } else {
+                    PermissionRequester(
+                        intersection,
+                        it.contract,
+                        it.grantChecker,
+                    )
+                }
+            }
+        if (requester == null) {
+            listener.error("No permissions can be requested.")
+            return
+        }
+        val alreadyGranted = requester.grantChecker(cordova.context, permissions)
+        if (alreadyGranted.size == permissions.size) {
+            listener.success(alreadyGranted)
+            return
+        }
+        val requestCode = permissionRequestName.getAndIncrement()
+        permissionRequests[requestCode] = PermissionRequestListener(
+            requester,
+            listener,
+            alreadyGranted,
+        )
+        val toRequestPermission = requester.permissions - alreadyGranted
+        Log.i(TAG, "Starting request for activity result $toRequestPermission")
+        cordova.startActivityForResult(
+            this@RadarPassivePlugin,
+            requester.contract.createIntent(
+                cordova.context,
+                toRequestPermission
+            ),
+            requestCode,
+        )
     }
 
     companion object {
         private const val TAG = "RadarPassivePlugin"
     }
+
+    data class PermissionRequestListener(
+        val requester: PermissionRequester,
+        val listener: ResultListener<Set<String>>,
+        val alreadyGranted: Set<String>,
+    )
 }

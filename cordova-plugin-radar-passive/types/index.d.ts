@@ -75,6 +75,20 @@ interface RadarPassivePlugin {
   permissionsNeeded(callback: RadarPassiveCallback<{[permission: string]: string[]}>)
 
   /**
+   * Query which permissions can be requested on behalf of the app. Only the permissions
+   * returned by this callback can be used in {@link requestPermissions}. The return value is a list
+   * of a list of strings. Each sublist can be requested in a single request.
+   */
+  requestPermissionsSupported(callback: RadarPassiveCallback<{[index: string]: string[]}>): void
+
+  /**
+   * Request permissions. The first permission handler that is encountered that matches any of the
+   * requested permissions will be invoked. Permissions that were granted as result of the
+   * permission request will be provided back in the callback.
+   */
+  requestPermissions(permissions: string[], callback: RadarPassiveCallback<string[]>)
+
+  /**
    * Whenever your app has acquired a permission, provide it here to notify the plugin.
    */
   onAcquiredPermissions(permissions: string[], callback?: RadarPassiveCallback<void>)
