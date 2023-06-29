@@ -156,7 +156,7 @@ function onDeviceReady() {
                             }
                         },
                         error: function(message) {
-                            console.log("Failed to get permissions " + permissionRequestSets[requestSetKeys[0]] + ": " + message)
+                            console.log("Failed to get permissions " + permissionsToRequest + ": " + message)
 
                             var checkAgain = requestSetKeys.slice(1).flatMap(function (key) { return permissionRequestSets[key] })
                             if (checkAgain.length > 0) {
