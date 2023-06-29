@@ -2,20 +2,20 @@ package org.radarbase.cordova.plugin.passive
 
 import android.content.Intent
 import android.util.Log
-import android.util.SparseArray
 import org.apache.cordova.CallbackContext
 import org.apache.cordova.CordovaInterface
 import org.apache.cordova.CordovaPlugin
 import org.apache.cordova.CordovaWebView
 import org.json.JSONArray
 import org.json.JSONObject
+import org.radarbase.android.kafka.ServerStatusListener
 import org.radarbase.android.plugin.RadarPassive
 import org.radarbase.android.plugin.ResultListener
+import org.radarbase.android.plugin.SourceStatus
 import org.radarbase.android.util.PermissionRequester
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicLong
 
 /**
  * This class echoes a string called from JavaScript.
@@ -70,9 +70,11 @@ class RadarPassivePlugin : CordovaPlugin() {
                     }
                     "serverStatus" -> callbackContext.success(serverStatus().toString())
                     "registerServerStatusListener" -> {
-                        serverStatusListeners += callbackContext.toListener(args.getInt(0)) {
+                        val listener = callbackContext.toListener<ServerStatusListener.Status>(args.getInt(0)) {
                             name
                         }
+                        serverStatusListeners += listener
+                        listener.next(serverStatus())
                     }
                     "unregisterServerStatusListener" -> {
                         serverStatusListeners -= args.getInt(0)
@@ -86,18 +88,22 @@ class RadarPassivePlugin : CordovaPlugin() {
                         })
                     }
                     "registerSourceStatusListener" -> {
-                        sourceStatusListeners += callbackContext.toListener(args.getInt(0)) {
+                        val listener = callbackContext.toListener<SourceStatus>(args.getInt(0)) {
                             toJSONObject()
                         }
+                        sourceStatusListeners += listener
+                        sourceStatus().forEach { listener.next(it) }
                     }
                     "unregisterSourceStatusListener" -> {
                         sourceStatusListeners -= args.getInt(0)
                         callbackContext.success()
                     }
                     "registerPluginListener" -> {
-                        pluginsUpdatedListeners += callbackContext.toListener(args.getInt(0)) {
+                        val listener = callbackContext.toListener<List<String>>(args.getInt(0)) {
                             JSONArray(this)
                         }
+                        pluginsUpdatedListeners += listener
+                        listener.next(plugins)
                     }
                     "requestPermissions" -> {
                         val permissions = args.getJSONArray(0).toStringSet()

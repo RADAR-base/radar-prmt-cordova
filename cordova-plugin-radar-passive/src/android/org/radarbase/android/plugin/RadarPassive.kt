@@ -41,6 +41,8 @@ class RadarPassive(
     val serverStatusListeners = ResultListenerList<ServerStatusListener.Status>()
     val sourceStatusListeners = ResultListenerList<SourceStatus>()
     val pluginsUpdatedListeners = ResultListenerList<List<String>>()
+    val plugins: List<String>
+        get() = radarService.plugins.map { it.pluginName }
     val sendListeners = ResultListenerList<SendStatus>()
     val requestPermissionRequesters: List<PermissionRequester>
         get() = radarService.permissionRequesters
@@ -208,7 +210,7 @@ class RadarPassive(
 
 
     private fun onProvidersUpdatedEvent() {
-        pluginsUpdatedListeners.next(radarService.connections.map { it.pluginName })
+        pluginsUpdatedListeners.next(plugins)
     }
 
     fun setAllowedSourceIds(pluginName: String, sourceIds: List<String>) {
@@ -247,11 +249,11 @@ class RadarPassive(
     }
 
     private fun detach(invalidate: Boolean) {
-        radarServiceConnection.unbind()
         if (invalidate) {
-            authServiceConnection.binder?.invalidate(null, false)
+            authServiceConnection.binder?.invalidate(null, true)
         }
         authServiceConnection.unbind()
+        radarServiceConnection.unbind()
         try {
             broadcastManager.unregisterReceiver(statusReceiver)
         } catch (ex: Exception) {
