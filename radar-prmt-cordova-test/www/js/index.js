@@ -136,54 +136,70 @@ function checkPermissions(permissionsNeeded) {
     console.log("permissions needed: ", JSON.stringify(permissionsNeeded))
     RadarPassivePlugin.requestPermissionsSupported({
         success: function (permissionsSupportedSets) {
-            var permissionRequestSets = {}
-            var supportedSetsKeys = Object.keys(permissionsSupportedSets);
-            outer: for (var i = 0; i < permissionsNeeded.length; i++) {
-                var permission = permissionsNeeded[i];
-                for (var j = 0; j < supportedSetsKeys.length; j++) {
-                    var permissionSupportedSet = permissionsSupportedSets[supportedSetsKeys[j]];
-                    if (permissionSupportedSet.indexOf(permission) >= 0) {
-                        if (!permissionRequestSets[j]) {
-                            permissionRequestSets[j] = Array()
-                        }
-                        permissionRequestSets[j].push(permission)
-                        continue outer;
-                    }
-                }
-            }
+            var permissionRequestSets = partitionPermissions(permissionsSupportedSets, permissionsNeeded)
             console.log("Made permission sets " + JSON.stringify(permissionRequestSets) + " out of supported " + JSON.stringify(permissionsSupportedSets))
 
             var requestSetKeys = Object.keys(permissionRequestSets)
-            if (requestSetKeys.length > 0) {
-                var permissionsToRequest = permissionRequestSets[requestSetKeys[0]]
-                console.log("Requesting permissions " + JSON.stringify(permissionsToRequest))
-                RadarPassivePlugin.requestPermissions(permissionsToRequest, {
-                    success: function(permissionsGranted) {
-                        console.log("Granted permissions " + JSON.stringify(permissionsGranted) + " of " + JSON.stringify(permissionsToRequest));
-                        if (permissionsGranted.length > 0) {
-                            RadarPassivePlugin.onAcquiredPermissions(permissionsGranted, {
-                                success: function () {
-                                    console.log("Indicated to plugin that permissions " + JSON.stringify(permissionsGranted) + " have been acquired.")
-                                }
-                            })
-                        }
-
-
-                        var checkAgain = requestSetKeys.slice(1).flatMap(function (key) { return permissionRequestSets[key] })
-                        if (checkAgain.length > 0) {
-                            checkPermissions(checkAgain);
-                        }
-                    },
-                    error: function(message) {
-                        console.log("Failed to get permissions " + permissionsToRequest + ": " + message)
-
-                        var checkAgain = requestSetKeys.slice(1).flatMap(function (key) { return permissionRequestSets[key] })
-                        if (checkAgain.length > 0) {
-                            checkPermissions(checkAgain);
-                        }
-                    }
-                })
+            if (requestSetKeys.length === 0) {
+                return
             }
+            var permissionsToRequest = permissionRequestSets[requestSetKeys[0]]
+            console.log("Requesting permissions " + JSON.stringify(permissionsToRequest))
+            RadarPassivePlugin.requestPermissions(permissionsToRequest, {
+                success: function(permissionsGranted) {
+                    console.log("Granted permissions " + JSON.stringify(permissionsGranted) + " of " + JSON.stringify(permissionsToRequest));
+                    if (permissionsGranted.length > 0) {
+                        RadarPassivePlugin.onAcquiredPermissions(permissionsGranted, {
+                            success: function () {
+                                console.log("Indicated to plugin that permissions " + JSON.stringify(permissionsGranted) + " have been acquired.")
+                            }
+                        })
+                    }
+                    checkRemainingPermissions(requestSetKeys, permissionRequestSets)
+                },
+                error: function(message) {
+                    console.log("Failed to get permissions " + permissionsToRequest + ": " + message)
+                    checkRemainingPermissions(requestSetKeys, permissionRequestSets)
+                }
+            })
         }
     })
+}
+
+function checkRemainingPermissions(requestSetKeys, permissionRequestSets) {
+    var checkAgain = requestSetKeys.slice(1).flatMap(function (key) { return permissionRequestSets[key] })
+    if (checkAgain.length > 0) {
+        checkPermissions(checkAgain);
+    }
+}
+
+function partitionPermissions(permissionsSupportedSets, permissionsNeeded) {
+    var permissionRequestSets = {}
+    permissionsNeeded.forEach(function(permission) {
+        var partitionKeys = Object.keys(permissionsSupportedSets).filter(function(key) {
+            return permissionsSupportedSets[key].indexOf(permission) >= 0;
+        });
+        if (partitionKeys && partitionKeys.length > 0) {
+            var partitionKey = partitionKeys[0];
+            var partition = permissionRequestSets[partitionKey]
+            if (!partition) {
+                partition = Array()
+                permissionRequestSets[partitionKey] = partition
+            }
+            console.log("Pushing " + permission + " to set " + partitionKey);
+            partition.push(permission);
+        }
+    });
+    return permissionRequestSets
+}
+
+if (!Array.prototype.flatMap) {
+    Array.prototype.flatMap = function (f, ctx) {
+        return this.reduce(
+                function(r, x, i, a) {
+                    return r.concat(f.call(ctx, x, i, a))
+                },
+                [],
+        )
+    }
 }

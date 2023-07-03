@@ -103,7 +103,7 @@ class RadarPassivePlugin : CordovaPlugin() {
                             JSONArray(this)
                         }
                         pluginsUpdatedListeners += listener
-                        listener.next(plugins)
+                        listener.next(pluginsActive)
                     }
                     "requestPermissions" -> {
                         val permissions = args.getJSONArray(0).toStringSet()
