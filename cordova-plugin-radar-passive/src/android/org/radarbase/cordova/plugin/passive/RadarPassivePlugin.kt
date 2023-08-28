@@ -2,6 +2,8 @@ package org.radarbase.cordova.plugin.passive
 
 import android.content.Intent
 import android.util.Log
+import androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions.Companion.ACTION_REQUEST_PERMISSIONS
+import androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions.Companion.EXTRA_PERMISSIONS
 import org.apache.cordova.CallbackContext
 import org.apache.cordova.CordovaInterface
 import org.apache.cordova.CordovaPlugin
@@ -226,14 +228,22 @@ class RadarPassivePlugin : CordovaPlugin() {
         )
         val toRequestPermission = requester.permissions - alreadyGranted
         Log.i(TAG, "Starting request for activity result $toRequestPermission")
-        cordova.startActivityForResult(
-            this@RadarPassivePlugin,
-            requester.contract.createIntent(
-                cordova.context,
-                toRequestPermission
-            ),
-            requestCode,
-        )
+
+        val intent = requester.contract.createIntent(cordova.context, toRequestPermission)
+
+        if (intent.action == ACTION_REQUEST_PERMISSIONS) {
+            cordova.requestPermissions(
+                this@RadarPassivePlugin,
+                requestCode,
+                intent.getStringArrayExtra(EXTRA_PERMISSIONS)
+            )
+        } else {
+            cordova.startActivityForResult(
+                this@RadarPassivePlugin,
+                intent,
+                requestCode,
+            )
+        }
     }
 
     companion object {
