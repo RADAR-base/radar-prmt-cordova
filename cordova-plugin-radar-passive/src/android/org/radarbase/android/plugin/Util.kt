@@ -1,6 +1,7 @@
 package org.radarbase.android.plugin
 
 import android.util.SparseArray
+import androidx.core.util.remove
 import org.radarbase.android.data.DataHandler
 
 class ResultListenerList<T> {
@@ -29,6 +30,14 @@ class ResultListenerList<T> {
     @Synchronized
     operator fun minusAssign(id: Int) {
         sparseArray.remove(id)
+    }
+
+    @Synchronized
+    operator fun minusAssign(listener: ResultListener<T>) {
+        val idx = sparseArray.indexOfValue(listener)
+        if (idx != -1) {
+            sparseArray.remove(idx, listener)
+        }
     }
 
     @Synchronized

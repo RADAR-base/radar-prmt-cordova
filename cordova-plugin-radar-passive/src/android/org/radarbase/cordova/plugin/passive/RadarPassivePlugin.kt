@@ -1,6 +1,7 @@
 package org.radarbase.cordova.plugin.passive
 
 import android.content.Intent
+import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions.Companion.ACTION_REQUEST_PERMISSIONS
 import androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions.Companion.EXTRA_PERMISSIONS
@@ -10,6 +11,8 @@ import org.apache.cordova.CordovaPlugin
 import org.apache.cordova.CordovaWebView
 import org.json.JSONArray
 import org.json.JSONObject
+import org.radarbase.android.RadarService
+import org.radarbase.android.auth.AuthService
 import org.radarbase.android.kafka.ServerStatusListener
 import org.radarbase.android.plugin.RadarPassive
 import org.radarbase.android.plugin.ResultListener
@@ -30,10 +33,11 @@ class RadarPassivePlugin : CordovaPlugin() {
     override fun initialize(cordova: CordovaInterface, webView: CordovaWebView) {
         super.initialize(cordova, webView)
 
+        AuthService.serviceClass = AuthServiceImpl::class.java
+        RadarService.serviceClass = RadarServiceImpl::class.java
+
         radarPassive = RadarPassive(
             cordova.context,
-            RadarServiceImpl::class.java,
-            AuthServiceImpl::class.java
         )
 
         cordova.setActivityResultCallback(this)
@@ -57,16 +61,18 @@ class RadarPassivePlugin : CordovaPlugin() {
                         setAuthentication(args.optJSONObject(0)?.toAuthentication())
                         callbackContext.success()
                     }
-                    "start" -> start(callbackContext.toListener())
-                    "startScanning" -> {
+                    "start" -> cordova.threadPool.execute {
+                        start(callbackContext.toListener())
+                    }
+                    "startScanning" -> cordova.threadPool.execute {
                         startScanning()
                         callbackContext.success()
                     }
-                    "stopScanning" -> {
+                    "stopScanning" -> cordova.threadPool.execute {
                         stopScanning()
                         callbackContext.success()
                     }
-                    "stop" -> {
+                    "stop" -> cordova.threadPool.execute {
                         stop()
                         callbackContext.success()
                     }
@@ -130,13 +136,15 @@ class RadarPassivePlugin : CordovaPlugin() {
                         sendListeners -= args.getInt(0)
                         callbackContext.success()
                     }
-                    "recordsInCache" -> callbackContext.success(
-                        jsonObject {
-                            recordsInCache().forEach { (k, v) ->
-                                put(k, v)
+                    "recordsInCache" -> cordova.threadPool.execute {
+                        callbackContext.success(
+                            jsonObject {
+                                recordsInCache().forEach { (k, v) ->
+                                    put(k, v)
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
                     "permissionsNeeded" -> callbackContext.success(
                         jsonObject {
                             permissionsNeeded().forEach { (k, v) ->
@@ -144,7 +152,7 @@ class RadarPassivePlugin : CordovaPlugin() {
                             }
                         }
                     )
-                    "onAcquiredPermissions" -> {
+                    "onAcquiredPermissions" -> cordova.threadPool.execute {
                         onAcquiredPermissions()
                         callbackContext.success()
                     }
@@ -227,7 +235,7 @@ class RadarPassivePlugin : CordovaPlugin() {
             alreadyGranted,
         )
         val toRequestPermission = requester.permissions - alreadyGranted
-        Log.i(TAG, "Starting request for activity result $toRequestPermission")
+        Log.i(TAG, "Starting request $requestCode for activity result $toRequestPermission")
 
         val intent = requester.contract.createIntent(cordova.context, toRequestPermission)
 
@@ -244,6 +252,32 @@ class RadarPassivePlugin : CordovaPlugin() {
                 requestCode,
             )
         }
+    }
+
+    // WARNING: onRequestPermissionsResult is not called yet by the Cordova code, implementing this instead.
+    @Suppress("OVERRIDE_DEPRECATION")
+    override fun onRequestPermissionResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
+
+    // WARNING: onRequestPermissionsResult is not called yet, implementing this instead.
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        val request = permissionRequests.remove(requestCode) ?: return
+        Log.i(TAG, "Got request permissions result for code $requestCode and permissions ${permissions.contentToString()}")
+        request.listener.success(buildSet {
+            permissions.filterIndexedTo(this) { idx, _ ->
+                grantResults[idx] == PERMISSION_GRANTED
+            }
+            addAll(request.alreadyGranted)
+        })
     }
 
     companion object {

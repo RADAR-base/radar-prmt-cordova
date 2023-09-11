@@ -27,12 +27,10 @@ import org.radarbase.android.util.PermissionRequester
  */
 class RadarPassive(
     context: Context,
-    radarServiceClass: Class<out RadarService>,
-    authServiceClass: Class<out AuthService>,
 ) {
     private val broadcastManager: LocalBroadcastManager = LocalBroadcastManager.getInstance(context)
-    private val radarServiceConnection: ManagedServiceConnection<IRadarBinder> = ManagedServiceConnection(context, radarServiceClass)
-    private val authServiceConnection: ManagedServiceConnection<AuthService.AuthServiceBinder> = ManagedServiceConnection(context, authServiceClass)
+    private val radarServiceConnection: ManagedServiceConnection<IRadarBinder> = ManagedServiceConnection(context.applicationContext, RadarService.serviceClass, true)
+    private val authServiceConnection: ManagedServiceConnection<AuthService.AuthServiceBinder> = ManagedServiceConnection(context.applicationContext, AuthService.serviceClass)
 
     private val config: RadarConfiguration = RadarConfiguration.getInstance(context)
     private var localAuthentication: Authentication? = null
@@ -53,8 +51,6 @@ class RadarPassive(
         }
 
     init {
-        AuthService.serviceClass = authServiceClass
-        RadarService.serviceClass = radarServiceClass
         statusReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 val action = intent?.action ?: return
@@ -132,15 +128,24 @@ class RadarPassive(
     }
 
     fun start(resultListener: ResultListener<Unit>) {
-        bindListeners += resultListener
         broadcastManager.registerReceiver(statusReceiver, IntentFilter().apply {
             addAction(SERVER_RECORDS_SENT_TOPIC)
             addAction(SOURCE_STATUS_CHANGED)
             addAction(SERVER_STATUS_CHANGED)
             addAction(ACTION_PROVIDERS_UPDATED)
         })
-        radarServiceConnection.bind()
-        authServiceConnection.bind()
+        bindListeners += resultListener
+        if (!radarServiceConnection.bind()) {
+            bindListeners -= resultListener
+            radarServiceConnection.unbind()
+            resultListener.error("Failed to connect to RadarService")
+        }
+        if (!authServiceConnection.bind()) {
+            bindListeners -= resultListener
+            radarServiceConnection.unbind()
+            authServiceConnection.unbind()
+            resultListener.error("Failed to connect to AuthService")
+        }
     }
 
     fun startScanning() {
